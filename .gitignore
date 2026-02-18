@@ -39,3 +39,41 @@
 
 # debug information files
 *.dwo
+
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Virtual environments
+.venv/
+env/
+venv/
+
+# uv lock file (optional: if you want others to use it, keep it)
+# uv.lock
+
+# VSCode / IDE settings
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# MacOS
+.DS_Store
+
+# Python coverage
+htmlcov/
+.coverage
+.pytest_cache/
