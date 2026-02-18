@@ -77,3 +77,22 @@ venv/
 htmlcov/
 .coverage
 .pytest_cache/
+
+
+# Rust/Cargo build artifacts
+target/
+**/*.rs.bk
+
+# If using Rust with Visual Studio Code
+.vscode/
+
+# If using JetBrains IDEs
+.idea/
+
+# Backup files
+*.swp
+*~
+
+# OS generated files
+.DS_Store
+Thumbs.db
