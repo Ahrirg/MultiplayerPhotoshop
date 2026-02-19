@@ -1,0 +1,20 @@
+[project]
+name = "butirka"
+version = "0.1.0"
+description = "FastAPI backend skeleton with image hashing + file storage and SQLite metadata DB"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi[standard,standart]>=0.111",
+  "uvicorn[standard]>=0.30",
+  "sqlalchemy>=2.0",
+  "pydantic>=2.7",
+  "pydantic-settings>=2.3",
+  "python-multipart>=0.0.9",
+  "aiofiles>=24.1.0",
+]
+
+[tool.uv]
+dev-dependencies = [
+  "ruff>=0.5.0",
+]
