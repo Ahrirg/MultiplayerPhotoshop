@@ -5,4 +5,6 @@ edition = "2021"
 
 [dependencies]
 axum = { version = "0.8.8", features = ["ws"] }
+deadpool-redis = "0.22.1"
+redis = "0.32.7"
 tokio = { version = "1.49.0", features = ["full"] }
