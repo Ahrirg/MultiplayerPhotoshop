@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<body>
+  <h1>WASM Test</h1>
+  <script src="test.js"></script>
+  <script>
+    Module.onRuntimeInitialized = function() {
+        const helloFunc = Module.cwrap('hello', 'string', []);
+        let a = 6;
+        let b = 7;
+        const result = Module.ccall(
+            'add',      // C function name
+            'number',   // return type
+            ['number', 'number'], // arg types
+            [a, b]      // arguments
+        );
+
+        let ptr = helloFunc(); // returns a pointer (number)
+        let helloStr = Module.UTF8ToString(ptr); // convert to JS string
+
+        document.body.innerHTML += "<p>" + a + "+" + b + "=" + result + "</p>";
+        console.log("Result from WASM:", result, "\nALSO, WATCH THIS:\n", helloStr);
+    };
+  </script>
+</body>
+</html>
