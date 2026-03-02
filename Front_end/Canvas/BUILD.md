@@ -1,17 +1,29 @@
 =================
 CANVAS BUILD DOC
+For compiling web assembly and typescript files, and testing on a local server
 =================
 
-## PREREQUISITES:
-1. Emscripten, a C/C++ - WASM compiler: 
-https://emscripten.org/docs/getting_started/downloads.html
-2. Python 3 for local server
+## Prerequisites
+
+1. **Make** — GNU Make (Windows: mingw32-make or Git for Windows)
+2. **Emscripten** — installed and `emcc` available in PATH
+3. **TypeScript** — installed globally (`npm install -g typescript`)
+4. **Python 3** — for running the local HTTP server (`python -m http.server`)
 
 
-## COMPILE: 
-emcc test.cpp -O3 -s EXPORTED_FUNCTIONS="['_add','_hello']" -s EXPORTED_RUNTIME_METHODS="['ccall','cwrap', 'UTF8ToString']" -o test.js
+## Project Structure
+
+- `test.cpp` → C++ code compiled to WASM
+- `app.ts` → TypeScript frontend
+- `dist/` → output folder for compiled JS/WASM files
 
 
-## LOCALLY HOST PY SERVER TO TEST:
-python -m http.server 8000
+## Build
+```bash
+make
+```
 
+## Run
+```bash
+make run
+```
