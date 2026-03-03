@@ -1,4 +1,8 @@
+import {GenerateObj, ObjectType, Obj, ConvertToGPUObj} from "./types.js";
+
+//
 // WASM TEST
+//
 Module.onRuntimeInitialized = function() {
     const helloFunc = Module.cwrap('hello', 'string', []);
     let a: number = 6;
@@ -20,15 +24,39 @@ Module.onRuntimeInitialized = function() {
     console.log("Result from WASM: ", a, "*", b, "=", result);
 };
 
+//
+// WEBGL
+//
 
+// VERTEX AND INDEX ARRAY SETUP
+let verticesTemporary: number[] = [];
+let indicesTemporary: number[] = [];
 
-// OPENGL CONTEXT FETCH
-const canvas = document.getElementById('glCanvas') as HTMLCanvasElement;
-const gl = canvas.getContext('webgl') as WebGLRenderingContext;
-
-if (!gl) {
-    alert("WebGL not supported");
+// Rectangle list
+const arr: Obj[] = [
+    GenerateObj(0, 2, ObjectType.Line, [-0.0,0.0,-0.5,-0.8], [0,0,0,1], 0, [0.01]),
+    GenerateObj(0, 3, ObjectType.Line, [0.0,0.0,0.5,-0.8], [0,0,0,1], 0, [0.01]),
+    GenerateObj(0, 4, ObjectType.Line, [0.0,0.0,0.0,0.5], [0,0,0,1], 0, [0.01]),
+    GenerateObj(0, 5, ObjectType.Line, [0.0,0.5,-0.5,0.0], [0,0,0,1], 0, [0.01]),
+    GenerateObj(0, 5, ObjectType.Line, [0.0,0.5,0.5,0.0], [0,0,0,1], 0, [0.01]),
+    GenerateObj(0, 6, ObjectType.Rectangle, [-0.2,0.5,0.2,0.8], [0,0,0,1], 0, []),
+    GenerateObj(0, 7, ObjectType.Line, [0.5,-0.5,0.5,0.95], [1,0.5,0.3,1], 0, [0.02]),
+    GenerateObj(0, 8, ObjectType.Rectangle, [0.5,0.5,1,0.65], [1,0,0,1], 0, []),
+    GenerateObj(0, 9, ObjectType.Rectangle, [0.5,0.65,1,0.8], [0,0.7,0,1], 0, []),
+    GenerateObj(0, 10, ObjectType.Rectangle, [0.5,0.8,1,0.95], [1,1,0,1], 0, []),
+    // Drawing "Lithuanian patriot" by Gustas Šadbaras
+]
+for(let i = 0; i < arr.length; i++)
+{
+    const newObj = ConvertToGPUObj(arr[i])!;
+    let currentNumVertices = verticesTemporary.length / 6;
+    verticesTemporary = verticesTemporary.concat(newObj.Vertices);
+    indicesTemporary = indicesTemporary.concat(newObj.Indices.map(x => currentNumVertices+x));
 }
+
+const vertices = new Float32Array(verticesTemporary);
+const indices = new Uint16Array(indicesTemporary);
+
 
 
 // helper function for compiling shaders
@@ -42,25 +70,33 @@ function compileShader(source: string, type: number) {
     return shader;
 }
 
+// OPENGL CONTEXT CREATION
+const canvas = document.getElementById('glCanvas') as HTMLCanvasElement;
+const gl = canvas.getContext('webgl') as WebGLRenderingContext;
+
+if (!gl) {
+    alert("WebGL not supported");
+}
+
 // VERT SHADER
 const vsSource = `
     attribute vec2 aPosition;
-    attribute vec3 aColor;
-    varying vec3 vColor;
+    attribute vec4 v_color;
+    varying vec4 color;
 
     void main() {
     gl_Position = vec4(aPosition, 0.0, 1.0);
-    vColor = aColor;
+    color = v_color;
 }
 `;
 
 // FRAG SHADER
 const fsSource = `
     precision mediump float;
-    varying vec3 vColor;
+    varying vec4 color;
 
     void main() {
-        gl_FragColor = vec4(vColor, 1.0);
+        gl_FragColor = vec4(color);
     }
 `;
 
@@ -78,21 +114,19 @@ if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
 }
 gl.useProgram(program);
 
-// VERTEX ARRAY DEFINITION
-const vertices = new Float32Array([
-    0.0,  0.7, 1.0, 0.0, 0.0,
-   -0.7, -0.7, 0.0, 1.0, 0.0,
-    0.7, -0.7, 0.0, 0.0, 1.0
-]);
 
 // GL BUFFER SETUP
-const buffer = gl.createBuffer()!;
-gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+const vertexBuffer = gl.createBuffer()!;
+gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
 gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+
+const indexBuffer = gl.createBuffer()!;
+gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
 
 
 // ATTRIBUTE SETUP
-const stride = 5 * Float32Array.BYTES_PER_ELEMENT;
+const stride = 6 * Float32Array.BYTES_PER_ELEMENT;
 
 // POSITION ATTRIB SETUP
 const positionLocation = gl.getAttribLocation(program, "aPosition");
@@ -100,12 +134,12 @@ gl.enableVertexAttribArray(positionLocation);
 gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, stride, 0);
 
 // COLOR ATTRIB SETUP
-const colorLocation = gl.getAttribLocation(program, "aColor");
+const colorLocation = gl.getAttribLocation(program, "v_color");
 gl.enableVertexAttribArray(colorLocation);
-gl.vertexAttribPointer(colorLocation, 3, gl.FLOAT, false, stride, 2 * Float32Array.BYTES_PER_ELEMENT);
+gl.vertexAttribPointer(colorLocation, 4, gl.FLOAT, false, stride, 2 * Float32Array.BYTES_PER_ELEMENT);
 
 
 // DRAW CALL
-gl.clearColor(0.1, 0.2, 0.3, 1.0);
+gl.clearColor(1.0, 1.0, 1.0, 1.0);
 gl.clear(gl.COLOR_BUFFER_BIT);
-gl.drawArrays(gl.TRIANGLES, 0, 3);
+gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
