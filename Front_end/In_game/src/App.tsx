@@ -2,6 +2,7 @@ import {TopBar} from './Topbar';
 import {RightBar} from './RightBar';
 import {LeftBar} from './Leftbar';
 import {BottomBar} from './BottomBar';
+import {Canvas} from './Canvas';
 
 function App() {
   return (
@@ -10,6 +11,7 @@ function App() {
         <TopBar />
         <div className="middle">
           <LeftBar />
+          <Canvas />
           <RightBar />
       </div>
         <BottomBar />
