@@ -1,0 +1,9 @@
+.canvas {
+  height:700px;
+  width:1000px;
+  margin: auto;
+
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+}
