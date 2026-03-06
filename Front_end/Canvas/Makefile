@@ -8,7 +8,7 @@ else
 endif
 
 
-all: $(OUT)/app.js
+all: $(OUT)/game_loop.js
 
 run: all
 	cmd /c start "http://localhost:8000"
@@ -16,16 +16,18 @@ run: all
 
 clean:
 ifeq ($(OS),Windows_NT)
-	del "$(OUT)\app.js"
 	del "$(OUT)\test.js"
 	del "$(OUT)\test.wasm"
 	del "$(OUT)\types.js"
+	del "$(OUT)\shaders.js"
+	del "$(OUT)\renderer.js"
+	del "$(OUT)\game_loop.js"
 else
-	rm -f $(OUT)/app.js $(OUT)/test.js $(OUT)/test.wasm
+	rm -f $(OUT)/test.js $(OUT)/test.wasm "$(OUT)\types.js" "$(OUT)\shaders.js" "$(OUT)\renderer.js" "$(OUT)\game_loop.js"
 endif
 
 
-$(OUT)/app.js: app.ts types.ts $(OUT)/test.wasm
+$(OUT)/game_loop.js: game_loop.ts types.ts renderer.ts shaders.ts
 	$(MKDIR)
 	tsc
 
