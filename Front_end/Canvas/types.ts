@@ -123,3 +123,25 @@ function LineToGPUObj(object: Obj): GPUObj
 
     return obj;
 }
+
+//
+// CONVERTS ARRAY OF OBJECTS TO FINAL VERTEX AND INDEX BUFFERS FOR RENDERING
+//
+export function bakeObjectsToGPUArrays(objectArray: Obj[]): {vertices: Float32Array, indices: Uint16Array}
+{
+    let verticesTemporary: number[] = [];
+    let indicesTemporary: number[] = [];
+
+    for(let i = 0; i < objectArray.length; i++)
+    {
+        const newObj = ConvertToGPUObj(objectArray[i])!;
+        let currentNumVertices = verticesTemporary.length / 6;
+        verticesTemporary = verticesTemporary.concat(newObj.Vertices);
+        indicesTemporary = indicesTemporary.concat(newObj.Indices.map(x => currentNumVertices+x));
+    }
+
+    let vertices = new Float32Array(verticesTemporary);
+    let indices = new Uint16Array(indicesTemporary);
+
+    return {vertices, indices};
+}
