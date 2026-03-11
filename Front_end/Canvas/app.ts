@@ -1,4 +1,4 @@
-import {GenerateObj, ObjectType, Obj, ConvertToGPUObj} from "./types.js";
+import {GenerateObj, ObjectType, Obj, ConvertToGPUObj} from "./objects.js";
 
 //
 // WASM TEST

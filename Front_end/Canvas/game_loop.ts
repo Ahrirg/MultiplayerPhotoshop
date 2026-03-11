@@ -1,6 +1,6 @@
 import { compileWebGLShader, createWebGLContext, createWebGLProgram, renderWebGLCanvas, setupWebGLBuffers, updateWebGLBuffers, setupWebGLVertexLayout } from "./renderer.js";
 import { vertexShaderSource, fragmentShaderSource } from "./shaders.js";
-import { Obj, ObjectType, GenerateObj, bakeObjectsToGPUArrays } from "./types.js";
+import { Obj, ObjectType, GenerateObj, bakeObjectsToGPUArrays } from "./objects.js";
 
 // Object setup
 const objectArray: Obj[] = [
@@ -39,27 +39,27 @@ setupWebGLVertexLayout(glContext, glProgram);
 // Render/game loop
 function gameLoop()
 {
-    // Handling updates from server
+    /// Handling updates from server
     // PLACEHOLDER
 
-    // Handling user input
+    /// Handling user input
     // PLACEHOLDER
 
-    // Handling temporary object (object being created by user, or the selected object)
-    // PLACEHOLDER
+    /// Handling temporary object (object being created by user, or the selected object)
+    // PLACEHOLDER (just AddOrEditObject with special ID, probably -1, and don't send to server)
 
-    // Modifying objects (as a test, remove later)
+    /// Modifying objects (as a test, remove later)
     objectArray[8].Color[0] += 0.01;
     objectArray[0].Points[0] += 0.02;
 
-    // Converting objects into render-ready arrays of vertices and indices
+    /// Converting objects into render-ready arrays of vertices and indices
     let {vertices, indices} = bakeObjectsToGPUArrays(objectArray);
-    // Updating vertex and index buffers inside GPU
+    /// Updating vertex and index buffers inside GPU
     updateWebGLBuffers(glContext, vertexBuffer, indexBuffer, vertices, indices);
-    // Rendering vertex buffer using index buffer, onto the canvas
+    /// Rendering vertex buffer using index buffer, onto the canvas
     renderWebGLCanvas(glContext, indices);
 
-    // Requesting next frame
+    /// Requesting next frame
     requestAnimationFrame(gameLoop);
 }
 

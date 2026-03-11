@@ -1,6 +1,11 @@
+
+let objectArray: Obj[];
+let gpuObjectArray: GPUObj[];
+
 // Enum for object types
 export enum ObjectType
 {
+    None,
     Rectangle, 
     Line, 
     Circle
@@ -27,6 +32,27 @@ export interface Obj
     Color: [number, number, number, number],
     ImageID: number | null
     ExtraArgs: number[]
+}
+
+// TODO
+// Adds object to list of objects (or makes changes to existing objects if IDs match)
+export function AddOrEditObject(): void
+{
+
+}
+
+// TODO
+// Removes object from list of objects
+export function removeObject(): void
+{
+
+}
+
+// TODO
+// Adds object to list of objects (or makes changes to existing objects if IDs match)
+export function AddObject(): void
+{
+
 }
 
 // Helper function for generating objects
