@@ -9,9 +9,12 @@ type LoginOverlayProps = {
 };
 
 export function Login_overlay({ setUsername, setSessionIp, mainServerIp } : LoginOverlayProps) {
+    const [error, setError] = useState<string>("");
+    
     const [showModal, setShowModal] = useState(true);
     const [name, setName] = useState("");
     const [session, setSession] = useState("");
+    
 
     async function getIp(): Promise<string | null> {
         try {
@@ -34,8 +37,8 @@ export function Login_overlay({ setUsername, setSessionIp, mainServerIp } : Logi
             setShowModal(false);
         } else{
             console.error(`Server not found with id'${session}'`)
+            setError(`Server not found with id'${session}'`);
         }
-
     };
 
     if (!showModal) return null;
@@ -45,6 +48,7 @@ export function Login_overlay({ setUsername, setSessionIp, mainServerIp } : Logi
         <div className="modal">
             <h2>Enter Server Info</h2>
 
+            {error !== "" && <div className="error">{error}</div>}
             <input
             placeholder="Username"
             value={name}
