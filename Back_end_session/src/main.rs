@@ -10,7 +10,7 @@ async fn main() {
                         .route("/", get(|| async { "Hello, World! from session rust server !!" }))
                         .route("/info", get(managers::api::read_info));
 
-    println!("Server listening on http://localhost:{}/", port);
+    println!("Server listening on 'http://localhost:{}/' id is: 'one'", port);
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();
 }
