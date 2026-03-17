@@ -30,12 +30,9 @@ function mousePressed()
 
     if(GetPlayerState().action == PlayerAction.Idle)
     {
-        // Later check if a tool is selected before setting this flag
-
-        ModifyPlayerState({selectedTool: ObjectType.Rectangle}); // temporary for testing
-
         GenerateTemporaryObject();
 
+        // Later check if a tool is selected before setting this flag
         ModifyPlayerState({action: PlayerAction.Drawing});
     } 
     else if(GetPlayerState().action == PlayerAction.Selecting)

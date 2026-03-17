@@ -4,19 +4,8 @@ import { Obj, ObjectType, GenerateObj, bakeObjectsToGPUArrays, SetObjArray, GetO
 import { initInputHandling } from "./input_handling.js";
 import { GetPlayerState, HandleTemporaryObjects } from "./player_state.js";
 
-// Object setup
-SetObjArray([
-    GenerateObj(0, 2, ObjectType.Line, [0.0,0.0,-0.5,-0.8], [0,0,0,1], 0, [0.01]),
-    GenerateObj(0, 3, ObjectType.Line, [0.0,0.0,0.5,-0.8], [0,0,0,1], 0, [0.01]),
-    GenerateObj(0, 4, ObjectType.Line, [0.0,0.0,0.0,0.5], [0,0,0,1], 0, [0.01]),
-    GenerateObj(0, 5, ObjectType.Line, [0.0,0.5,-0.5,0.0], [0,0,0,1], 0, [0.01]),
-    GenerateObj(0, 5, ObjectType.Line, [0.0,0.5,0.5,0.0], [0,0,0,1], 0, [0.01]),
-    GenerateObj(0, 6, ObjectType.Rectangle, [-0.2,0.5,0.2,0.8], [0,0,0,1], 0, []),
-    GenerateObj(0, 7, ObjectType.Line, [0.5,-0.5,0.5,0.95], [1,0.5,0.3,1], 0, [0.02]),
-    GenerateObj(0, 8, ObjectType.Rectangle, [0.5,0.5,1,0.65], [1,0,0,1], 0, []),
-    GenerateObj(0, 9, ObjectType.Rectangle, [0.5,0.65,1,0.8], [0,0.7,0,1], 0, []),
-    GenerateObj(0, 10, ObjectType.Rectangle, [0.5,0.8,1,0.95], [1,1,0,1], 0, [])
-]);
+// Object array setup
+SetObjArray([]);
 
 let {vertices, indices} = bakeObjectsToGPUArrays(GetObjArray());
 
