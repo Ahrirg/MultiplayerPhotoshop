@@ -18,18 +18,20 @@ interface PlayerState
     mousePosY: number,
     tempObject: Obj | null
     tempObjectIsAppendable: boolean
+    brushThickness: number
 }
 
 let State: PlayerState =
 {
-    selectedTool: ObjectType.None, 
-    selectedColor: [0,0,0,0], 
+    selectedTool: ObjectType.Brush, 
+    selectedColor: [0,0,0,1], 
     selectedObjectID: -1, 
     action: PlayerAction.Idle,
     mousePosX: 0,
     mousePosY: 0,
     tempObject: null,
-    tempObjectIsAppendable: false
+    tempObjectIsAppendable: false,
+    brushThickness: 0.01
 };
 
 export function ModifyPlayerState(changes: Object)
@@ -56,8 +58,8 @@ export function GenerateTemporaryObject(): void
 {
     State.tempObjectIsAppendable = IsObjectTypeAppendable(State.selectedTool);
     State.tempObject = GenerateObj(0, -1, State.selectedTool, 
-            [State.mousePosX, State.mousePosY, State.mousePosX+0.1, State.mousePosY+0.1], 
-            [0.9,0.1,0.1,1.0], 0, []);
+            [State.mousePosX, State.mousePosY, State.mousePosX, State.mousePosY], 
+            State.selectedColor, 0, [State.brushThickness]);
     AddObject(State.tempObject);
 }
 

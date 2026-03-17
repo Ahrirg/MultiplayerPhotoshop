@@ -84,6 +84,8 @@ export function ConvertToGPUObj(object: Obj): GPUObj | null
         return RectangleToGPUObj(object);
     if(object.Type == ObjectType.Line) // Line
         return LineToGPUObj(object);
+    if(object.Type == ObjectType.Brush)
+        return BrushToGPUObj(object);
 
     return null;
 }
@@ -154,6 +156,70 @@ function LineToGPUObj(object: Obj): GPUObj
     }
 
     return obj;
+}
+
+// NOTE: Later probably transfer to WASM
+// Converts a brush object into GPU-ready object
+function BrushToGPUObj(object: Obj): GPUObj {
+    let vertices: number[] = [];
+    let indices: number[] = [];
+
+    function getPerpendicular(dx: number, dy: number): [number, number] {
+        const len = Math.sqrt(dx * dx + dy * dy);
+        if (len < 0.0001) return [0, 0];
+        return [(-dy / len) * object.ExtraArgs[0], (dx / len) * object.ExtraArgs[0]];
+    }
+
+    for (let i = 0; i < object.Points.length - 2; i += 2) {
+        const x = object.Points[i];
+        const y = object.Points[i + 1];
+
+        let nx = 0, ny = 0;
+
+        if (i > 0) {
+            const dx1 = x - object.Points[i - 2];
+            const dy1 = y - object.Points[i - 1];
+            const [px1, py1] = getPerpendicular(dx1, dy1);
+            nx += px1;
+            ny += py1;
+        }
+
+        if (i < object.Points.length - 3) {
+            const dx2 = object.Points[i + 2] - x;
+            const dy2 = object.Points[i + 3] - y;
+            const [px2, py2] = getPerpendicular(dx2, dy2);
+            nx += px2;
+            ny += py2;
+        }
+
+        const mlen = Math.sqrt(nx * nx + ny * ny);
+        if (mlen > 0.0001) {
+            nx = (nx / mlen) * object.ExtraArgs[0];
+            ny = (ny / mlen) * object.ExtraArgs[0];
+        }
+
+        const idx = vertices.length / 6;
+        vertices.push(
+            x - nx, y - ny, object.Color[0], object.Color[1], object.Color[2], object.Color[3],
+            x + nx, y + ny, object.Color[0], object.Color[1], object.Color[2], object.Color[3]
+        );
+
+        if (i > 0) {
+            indices.push(
+                idx -2, idx - 1, idx,
+                idx, idx + 1, idx - 1
+            );
+        }
+    }
+
+    return {
+        UsrID: object.UsrID,
+        ObjID: object.ObjID,
+        Vertices: vertices,
+        Indices: indices,
+        Type: object.Type,
+        Image: null
+    };
 }
 
 //
