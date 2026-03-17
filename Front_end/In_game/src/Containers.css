@@ -30,8 +30,11 @@
   min-width: 30px;
   background: #4caf50;
   display: flex;
+  flex-direction: column;  /* ← mygtukai eina žemyn */
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start; /* ← prasideda nuo viršaus */
+  padding-top: 10px;
+  gap: 8px; /* ← tarpas tarp mygtukų */
 }
 
 /* Right panel */
@@ -56,4 +59,78 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* Left bar button */
+.left-btn {
+  background: rgba(0, 0, 0); /* ← tamsus pusiau permatomas fonas */
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.left-btn img {
+  filter: brightness(0) invert(1);
+}
+
+.left-btn:hover img {
+  filter: invert(0);
+}
+
+.left-btn:hover {
+  background: rgb(158, 158, 158)
+}
+.left-btn.active {
+  background: rgb(255, 255, 255);
+  outline: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+
+.left-btn.active img {
+  filter: invert(0);
+}
+
+
+.left-btn:active {
+  transform: scale(0.95);
+}
+
+.top {
+  position: relative; /* Allows child absolute positioning */
+  height: 5vh;
+  background: #222;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.top-tool-indicator {
+  position: absolute;
+  left: 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+.top-icon {
+  width: 25px;
+  height: 25px;
+  /* Since your icons are SVGs, you might need to invert colors 
+     if they are dark by default, like you did in the LeftBar */
+  filter: brightness(0) invert(1);
+}
+
+.no-tool {
+  opacity: 0.5;
+  font-style: italic;
 }

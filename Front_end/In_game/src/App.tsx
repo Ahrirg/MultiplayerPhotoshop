@@ -7,6 +7,7 @@ import {Canvas} from './Canvas';
 import {Login_overlay} from './Login';
 
 function App() {
+  const [selectedTool, setSelectedTool] = useState<string>("");
   const [username, setUsername] = useState<string>("");
   const [serverIp, setServerIp] = useState<string>("");
 
@@ -19,9 +20,13 @@ function App() {
       />
 
       <div className="container">
-        <TopBar />
+        <TopBar currentTool={selectedTool} />
+        
         <div className="middle">
-          <LeftBar />
+          <LeftBar 
+            activeTool={selectedTool} 
+            setActiveTool={setSelectedTool} 
+          />
           <Canvas />
           <RightBar />
         </div>
