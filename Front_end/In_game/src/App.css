@@ -88,3 +88,21 @@ input {
   justify-content: space-between;
 }
 /* OVERLAY */
+
+
+/* Right */
+.rightBar {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.layers {
+  flex: 0 0 80%;
+  overflow: auto;
+}
+
+.chat {
+  flex: 0 0 20%;
+  background: #292929;
+}
