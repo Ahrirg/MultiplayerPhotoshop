@@ -1,6 +1,6 @@
 import { useState } from "react";
 import {TopBar} from './Topbar';
-import {RightBar} from './RightBar';
+import {RightBar} from './Rightbar';
 import {LeftBar} from './Leftbar';
 import {BottomBar} from './BottomBar';
 import {Canvas} from './Canvas';
