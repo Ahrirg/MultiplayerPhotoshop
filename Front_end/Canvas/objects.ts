@@ -1,4 +1,3 @@
-
 let objectArray: Obj[];
 let gpuObjectArray: GPUObj[];
 
@@ -8,7 +7,8 @@ export enum ObjectType
     None,
     Rectangle, 
     Line, 
-    Circle
+    Circle,
+    Brush
 }
 
 // Interface for objects which are ready for the GPU to render
@@ -34,25 +34,29 @@ export interface Obj
     ExtraArgs: number[]
 }
 
-// TODO
-// Adds object to list of objects (or makes changes to existing objects if IDs match)
-export function AddOrEditObject(): void
+// Used for determining how to update temporary objects (a.k.a. whether to add cursor points to object or modify existing points)
+export function IsObjectTypeAppendable(objectType: ObjectType): boolean
 {
+    if(objectType == ObjectType.Brush)
+        return true;
 
+    return false;
 }
 
-// TODO
-// Removes object from list of objects
-export function removeObject(): void
-{
 
+export function SetObjArray(array: Obj[])
+{
+    objectArray = array;
 }
 
-// TODO
-// Adds object to list of objects (or makes changes to existing objects if IDs match)
-export function AddObject(): void
+export function GetObjArray(): Obj[]
 {
+    return objectArray;
+}
 
+export function AddObject(object: Obj)
+{
+    objectArray.push(object);
 }
 
 // Helper function for generating objects
@@ -72,11 +76,13 @@ export function GenerateObj(userId: number, objectId: number, type: ObjectType, 
     return obj;
 }
 
+
+
 export function ConvertToGPUObj(object: Obj): GPUObj | null
 {
-    if(object.Type == 0) // Rectangle
+    if(object.Type == ObjectType.Rectangle) // Rectangle
         return RectangleToGPUObj(object);
-    if(object.Type == 1) // Line
+    if(object.Type == ObjectType.Line) // Line
         return LineToGPUObj(object);
 
     return null;

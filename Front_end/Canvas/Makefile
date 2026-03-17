@@ -18,16 +18,19 @@ clean:
 ifeq ($(OS),Windows_NT)
 	del "$(OUT)\test.js"
 	del "$(OUT)\test.wasm"
-	del "$(OUT)\types.js"
+	del "$(OUT)\objects.js"
 	del "$(OUT)\shaders.js"
 	del "$(OUT)\renderer.js"
 	del "$(OUT)\game_loop.js"
+	del "$(OUT)\input_handling.js"
+	del "$(OUT)\player_state.js"
 else
-	rm -f $(OUT)/test.js $(OUT)/test.wasm "$(OUT)\types.js" "$(OUT)\shaders.js" "$(OUT)\renderer.js" "$(OUT)\game_loop.js"
+# Wait, why don't I just rm -f *  ???
+	rm -f $(OUT)/test.js $(OUT)/test.wasm "$(OUT)\types.js" "$(OUT)\shaders.js" "$(OUT)\renderer.js" "$(OUT)\game_loop.js" "$(OUT)\input_handling.js" "$(OUT)\player_state.js"
 endif
 
 
-$(OUT)/game_loop.js: game_loop.ts types.ts renderer.ts shaders.ts
+$(OUT)/game_loop.js: game_loop.ts objects.ts renderer.ts shaders.ts input_handling.ts player_state.ts
 	$(MKDIR)
 	tsc
 
