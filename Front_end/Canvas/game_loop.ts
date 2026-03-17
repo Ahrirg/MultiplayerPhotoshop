@@ -1,9 +1,11 @@
 import { compileWebGLShader, createWebGLContext, createWebGLProgram, renderWebGLCanvas, setupWebGLBuffers, updateWebGLBuffers, setupWebGLVertexLayout } from "./renderer.js";
 import { vertexShaderSource, fragmentShaderSource } from "./shaders.js";
-import { Obj, ObjectType, GenerateObj, bakeObjectsToGPUArrays } from "./types.js";
+import { Obj, ObjectType, GenerateObj, bakeObjectsToGPUArrays, SetObjArray, GetObjArray } from "./objects.js";
+import { initInputHandling } from "./input_handling.js";
+import { GetPlayerState, HandleTemporaryObjects } from "./player_state.js";
 
 // Object setup
-const objectArray: Obj[] = [
+SetObjArray([
     GenerateObj(0, 2, ObjectType.Line, [0.0,0.0,-0.5,-0.8], [0,0,0,1], 0, [0.01]),
     GenerateObj(0, 3, ObjectType.Line, [0.0,0.0,0.5,-0.8], [0,0,0,1], 0, [0.01]),
     GenerateObj(0, 4, ObjectType.Line, [0.0,0.0,0.0,0.5], [0,0,0,1], 0, [0.01]),
@@ -14,10 +16,9 @@ const objectArray: Obj[] = [
     GenerateObj(0, 8, ObjectType.Rectangle, [0.5,0.5,1,0.65], [1,0,0,1], 0, []),
     GenerateObj(0, 9, ObjectType.Rectangle, [0.5,0.65,1,0.8], [0,0.7,0,1], 0, []),
     GenerateObj(0, 10, ObjectType.Rectangle, [0.5,0.8,1,0.95], [1,1,0,1], 0, [])
-]
+]);
 
-
-let {vertices, indices} = bakeObjectsToGPUArrays(objectArray);
+let {vertices, indices} = bakeObjectsToGPUArrays(GetObjArray());
 
 
 // WebGL renderer initialization
@@ -35,31 +36,29 @@ let indexBuffer = buffers.indexBuffer;
 
 setupWebGLVertexLayout(glContext, glProgram);
 
+// User input handling initialization
+initInputHandling('glCanvas');
+
 
 // Render/game loop
 function gameLoop()
 {
-    // Handling updates from server
+    /// Handling updates from server
     // PLACEHOLDER
 
-    // Handling user input
-    // PLACEHOLDER
+    /// Handling temporary object (object being created by user, or the selected object)
+    HandleTemporaryObjects();
 
-    // Handling temporary object (object being created by user, or the selected object)
-    // PLACEHOLDER
+    /// Converting objects into render-ready arrays of vertices and indices
+    let {vertices, indices} = bakeObjectsToGPUArrays(GetObjArray());
 
-    // Modifying objects (as a test, remove later)
-    objectArray[8].Color[0] += 0.01;
-    objectArray[0].Points[0] += 0.02;
-
-    // Converting objects into render-ready arrays of vertices and indices
-    let {vertices, indices} = bakeObjectsToGPUArrays(objectArray);
-    // Updating vertex and index buffers inside GPU
+    /// Updating vertex and index buffers inside GPU
     updateWebGLBuffers(glContext, vertexBuffer, indexBuffer, vertices, indices);
-    // Rendering vertex buffer using index buffer, onto the canvas
+
+    /// Rendering vertex buffer using index buffer, onto the canvas
     renderWebGLCanvas(glContext, indices);
 
-    // Requesting next frame
+    /// Requesting next frame
     requestAnimationFrame(gameLoop);
 }
 
