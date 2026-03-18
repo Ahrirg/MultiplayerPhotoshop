@@ -4,31 +4,36 @@ import { Obj, ObjectType, GenerateObj, bakeObjectsToGPUArrays, SetObjArray, GetO
 import { initInputHandling } from "./input_handling.js";
 import { GetPlayerState, HandleTemporaryObjects } from "./player_state.js";
 
-// Object array setup
-SetObjArray([]);
+let vertexBuffer: WebGLBuffer
+let indexBuffer: WebGLBuffer
+let glContext: WebGLRenderingContext
 
-let {vertices, indices} = bakeObjectsToGPUArrays(GetObjArray());
+// Temporary fix: timeout so that react generates canvas in time for WebGL contex fetch
+setTimeout(() => {
 
-
-// WebGL renderer initialization
-const glContext = createWebGLContext('glCanvas');
-
-const vertexShader = compileWebGLShader(glContext, vertexShaderSource, glContext.VERTEX_SHADER);
-const fragmentShader = compileWebGLShader(glContext, fragmentShaderSource, glContext.FRAGMENT_SHADER);
-
-const glProgram = createWebGLProgram(glContext, fragmentShader, vertexShader);
+    let {vertices, indices} = bakeObjectsToGPUArrays(GetObjArray());
 
 
-const buffers = setupWebGLBuffers(glContext, vertices, indices);
-let vertexBuffer = buffers.vertexBuffer;
-let indexBuffer = buffers.indexBuffer;
-
-setupWebGLVertexLayout(glContext, glProgram);
-
-// User input handling initialization
-initInputHandling('glCanvas');
+    // WebGL renderer initialization
+    glContext = createWebGLContext('glCanvas');
 
 
+    const vertexShader = compileWebGLShader(glContext, vertexShaderSource, glContext.VERTEX_SHADER);
+    const fragmentShader = compileWebGLShader(glContext, fragmentShaderSource, glContext.FRAGMENT_SHADER);
+
+    const glProgram = createWebGLProgram(glContext, fragmentShader, vertexShader);
+
+
+    const buffers = setupWebGLBuffers(glContext, vertices, indices);
+    vertexBuffer = buffers.vertexBuffer;
+    indexBuffer = buffers.indexBuffer;
+
+    setupWebGLVertexLayout(glContext, glProgram);
+
+    // User input handling initialization
+    initInputHandling('glCanvas');
+    requestAnimationFrame(gameLoop)
+}, 1000);
 // Render/game loop
 function gameLoop()
 {
@@ -50,5 +55,3 @@ function gameLoop()
     /// Requesting next frame
     requestAnimationFrame(gameLoop);
 }
-
-requestAnimationFrame(gameLoop)
