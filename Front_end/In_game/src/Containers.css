@@ -51,8 +51,8 @@
 
 /* Right panel */
 .right {
-  width: 30vw;
-  max-width: 300px;
+  /* width: 30vw; */
+  /* max-width: 300px; */
   background: #2b2b2b; /* Darker UI color */
   border-left: 1px solid #111;
   display: block; /* Change from flex center to block for list */
@@ -61,7 +61,8 @@
 .rightBar {
   box-shadow: 0 1px 5px rgb(0, 0, 0); 
   box-sizing: border-box;
-  height: 100vh;
+  height: 90vh;
+  width: 20vw;
   display: flex;
   flex-direction: column;
 }

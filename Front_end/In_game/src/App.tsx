@@ -28,7 +28,10 @@ function App() {
             setActiveTool={setSelectedTool} 
           />
           <Canvas />
-          <RightBar />
+          <RightBar 
+            username={username}
+            sessionIp={serverIp}
+          />
         </div>
         <BottomBar />
       </div>

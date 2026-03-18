@@ -67,6 +67,7 @@ input {
 }
 
 .chat {
-  flex: 0 0 20%;
+  flex: 0 0 50%;
   background: #292929;
+  /* top: -100px; */
 }

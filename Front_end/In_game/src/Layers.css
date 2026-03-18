@@ -1,13 +1,16 @@
 .layers-container {
   display: flex;
   flex-direction: column;
+  width: 100%;
+
   height: 100%;
   color: #ccc;
   font-family: sans-serif;
 }
 
 .layers {
-  flex: 0 0 80%;
+  flex: 0 0 50%;
+  width: 100%;
   overflow: auto;
 }
 

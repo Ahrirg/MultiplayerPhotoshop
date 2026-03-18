@@ -1,8 +1,12 @@
 import {Layers} from "./Components/Layers";
 import {Chat} from "./Components/Chat";
 
+type sessionData = {
+  username: string;
+  sessionIp: string;
+};
 
-export function RightBar() {
+export function RightBar({ username, sessionIp } : sessionData) {
   return (
     <div className="rightBar">
       <div className="layers">
@@ -10,7 +14,10 @@ export function RightBar() {
       </div>
 
       <div className="chat">
-        <Chat sessionIp="T" />
+        <Chat
+          username={username}
+          sessionIp={sessionIp}
+        />
       </div>
     </div>
   );

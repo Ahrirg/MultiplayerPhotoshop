@@ -29,14 +29,14 @@ if not INTERNAL_API_TOKEN:
     logging.error("Environment variable INTERNAL_API_TOKEN is not set!")
     raise RuntimeError("INTERNAL_API_TOKEN must be set for secure authentication")
 
-SESSION_IPS_JSON = os.getenv("SESSION_IPS")
-if not SESSION_IPS_JSON:
-    logging.error("Environment variable SESSION_IPS is not set!")
-    raise RuntimeError("SESSION_IPS must be set to map session IDs to IPs")
-try:
-    SESSION_IPS = json.loads(SESSION_IPS_JSON)
-except json.JSONDecodeError:
-    raise RuntimeError("SESSION_IPS is not valid JSON")
+# SESSION_IPS_JSON = os.getenv("SESSION_IPS")
+# if not SESSION_IPS_JSON:
+#     logging.error("Environment variable SESSION_IPS is not set!")
+#     raise RuntimeError("SESSION_IPS must be set to map session IDs to IPs")
+# try:
+#     SESSION_IPS = json.loads(SESSION_IPS_JSON)
+# except json.JSONDecodeError:
+#     raise RuntimeError("SESSION_IPS is not valid JSON")
 
 SERVICE_PORT = int(os.getenv("SERVICE_PORT", 3000))
 
@@ -51,6 +51,8 @@ app.add_middleware(
 )
 
 def authenticate(token: str | None):
+    return True # currently bypassing auth because for testing fck users
+
     if not token:
         logging.warning("Authentication failed: No token provided")
         raise HTTPException(status_code=401, detail="Missing API token")
@@ -84,6 +86,7 @@ def read_root():
 @app.get("/join/{sessionId}")
 def get_ip_from_id(sessionId: str, x_api_token: str | None = Header(None)):
     authenticate(x_api_token)
+    print("here")
 
     '''
     if sessionId not in sessions:
@@ -98,12 +101,15 @@ def get_ip_from_id(sessionId: str, x_api_token: str | None = Header(None)):
         )
     '''
     
-    validate(sessionId)
+    # validate(sessionId) # disabling for testing + you still need to return if you not found 
     
-    HOST = sessions[sessionId]["host"] #Make this Dynamic
+    # HOST = sessions[sessionId]["host"] # THIS NOT DYNAMIC.......... :)
+    HOST = "http://localhost:3000"
 
     try:
+        print("here1")
         r = requests.get(HOST, timeout=2)
+        print("here2")
         logging.info("Server connection successful")
         return {
             "Server ip": HOST,
