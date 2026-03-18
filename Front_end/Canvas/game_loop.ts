@@ -8,8 +8,8 @@ let vertexBuffer: WebGLBuffer
 let indexBuffer: WebGLBuffer
 let glContext: WebGLRenderingContext
 
-// Temporary fix: timeout so that react generates canvas in time for WebGL contex fetch
-setTimeout(() => {
+export function initGameLoop()
+{
 
     let {vertices, indices} = bakeObjectsToGPUArrays(GetObjArray());
 
@@ -33,7 +33,8 @@ setTimeout(() => {
     // User input handling initialization
     initInputHandling('glCanvas');
     requestAnimationFrame(gameLoop)
-}, 1000);
+}
+
 // Render/game loop
 function gameLoop()
 {
