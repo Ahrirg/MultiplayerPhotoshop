@@ -1,5 +1,3 @@
-let objectArray: Obj[];
-let gpuObjectArray: GPUObj[];
 
 // Enum for object types
 export enum ObjectType
@@ -33,6 +31,9 @@ export interface Obj
     ImageID: number | null
     ExtraArgs: number[]
 }
+
+let objectArray: Obj[] = [GenerateObj(0, 0, ObjectType.Line, [-1.0,-1.0,-1.0,-1.0], [1,0,0,1], 0, [0.0])];
+
 
 // Used for determining how to update temporary objects (a.k.a. whether to add cursor points to object or modify existing points)
 export function IsObjectTypeAppendable(objectType: ObjectType): boolean
