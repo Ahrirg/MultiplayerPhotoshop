@@ -1,4 +1,4 @@
-### Maintainer for this part: Ahrirg
+### Maintainer for this part: Gustafas
 
 ## Requires:
 uv python3.13
