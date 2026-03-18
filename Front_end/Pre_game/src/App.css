@@ -1,0 +1,257 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600&display=swap');
+
+/* ── ROOT ─────────────────────────────────────── */
+.lp-root {
+  position: relative;
+  min-height: 100vh;
+  background: #0e0e0e;
+  color: #f0ede8;
+  font-family: 'DM Sans', sans-serif;
+  overflow-x: hidden;
+}
+
+/* ── SPLATS ───────────────────────────────────── */
+.splat {
+  position: fixed;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── HERO ─────────────────────────────────────── */
+.lp-hero {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 120px 24px 80px;
+  text-align: center;
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+.lp-hero.lp-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.lp-brush-line {
+  width: 60px;
+  height: 4px;
+  background: linear-gradient(90deg, #ff4d6d, #f7b731);
+  border-radius: 2px;
+  margin-bottom: 24px;
+}
+
+.lp-eyebrow {
+  font-size: 0.8rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #888;
+  margin-bottom: 16px;
+}
+
+.lp-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(5rem, 16vw, 12rem);
+  line-height: 0.9;
+  letter-spacing: -0.01em;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column; /* ← this stacks them vertically */
+  gap: 0.05em;
+}
+.lp-title-stroke {
+  -webkit-text-stroke: 2px #f0ede8;
+  color: transparent;
+}
+.lp-title-fill {
+  color: #ff4d6d;
+}
+
+.lp-tagline {
+  font-size: clamp(1rem, 2.5vw, 1.3rem);
+  color: #aaa;
+  margin-bottom: 48px;
+  font-weight: 400;
+}
+
+/* ── PLAY BUTTON ──────────────────────────────── */
+.lp-play-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+.lp-play-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: #ff4d6d;
+  color: #fff;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.3rem;
+  letter-spacing: 0.1em;
+  padding: 16px 40px;
+  clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+  transition: background 0.2s, transform 0.15s;
+}
+.lp-play-inner:hover {
+  background: #e63556;
+  transform: scale(1.04);
+}
+.lp-play-inner:active {
+  transform: scale(0.98);
+}
+
+/* ── SECTIONS ─────────────────────────────────── */
+.lp-section {
+  position: relative;
+  z-index: 1;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 80px 24px;
+}
+.lp-section-alt {
+  background: #141414;
+  max-width: 100%;
+}
+.lp-section-alt > * {
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.lp-section-tag {
+  font-size: 0.72rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #ff4d6d;
+  margin-bottom: 12px;
+}
+.lp-section-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(2.4rem, 6vw, 4rem);
+  letter-spacing: 0.02em;
+  margin-bottom: 48px;
+  color: #f0ede8;
+}
+
+/* ── GAME CARDS ───────────────────────────────── */
+.lp-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+}
+.lp-card {
+  background: #191919;
+  border: 1px solid #2a2a2a;
+  padding: 32px 24px;
+  position: relative;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.lp-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 3px; height: 100%;
+  background: linear-gradient(180deg, #ff4d6d, #f7b731);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.lp-card:hover {
+  border-color: #444;
+  transform: translateY(-4px);
+}
+.lp-card:hover::before {
+  opacity: 1;
+}
+.lp-card-icon {
+  font-size: 2rem;
+  display: block;
+  margin-bottom: 16px;
+}
+.lp-card-label {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.6rem;
+  letter-spacing: 0.05em;
+  margin-bottom: 10px;
+  color: #f0ede8;
+}
+.lp-card-desc {
+  font-size: 0.9rem;
+  color: #888;
+  line-height: 1.6;
+}
+
+/* ── TEAM ─────────────────────────────────────── */
+.lp-team {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+.lp-member {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #1e1e1e;
+  border: 1px solid #2a2a2a;
+  padding: 20px 28px;
+  flex: 1 1 200px;
+  transition: border-color 0.2s;
+}
+.lp-member:hover {
+  border-color: #ff4d6d;
+}
+.lp-avatar {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #ff4d6d, #f7b731);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.1rem;
+  color: #fff;
+  flex-shrink: 0;
+  clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+}
+.lp-member-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #f0ede8;
+}
+.lp-member-role {
+  font-size: 0.8rem;
+  color: #666;
+  margin-top: 2px;
+}
+
+/* ── CTA ──────────────────────────────────────── */
+.lp-cta {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  padding: 80px 24px;
+  text-align: center;
+  border-top: 1px solid #1e1e1e;
+}
+.lp-cta-sub {
+  font-size: 1rem;
+  color: #666;
+  letter-spacing: 0.05em;
+}
+
+/* ── FOOTER ───────────────────────────────────── */
+.lp-footer {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  padding: 24px;
+  font-size: 0.75rem;
+  color: #333;
+  border-top: 1px solid #1a1a1a;
+}
