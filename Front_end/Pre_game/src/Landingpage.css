@@ -90,12 +90,27 @@
   background: #ff4d6d;
   color: #fff;
   font-family: 'Bebas Neue', sans-serif;
-  font-size: 1.3rem;
+  font-size: 4rem;
   letter-spacing: 0.1em;
-  padding: 16px 40px;
+  padding: 26px 40px;
   clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
   transition: background 0.2s, transform 0.15s;
 }
+
+.lp-play-inner2 {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: #ff4d6d;
+  color: #fff;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 4rem;
+  letter-spacing: 0.1em;
+  padding: 26px 40px;
+  clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+  transition: background 0.2s, transform 0.15s;
+}
+
 .lp-play-inner:hover {
   background: #e63556;
   transform: scale(1.04);
