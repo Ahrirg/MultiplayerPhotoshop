@@ -5,7 +5,6 @@ import {LeftBar} from './Leftbar';
 import {BottomBar} from './BottomBar';
 import {Canvas} from './Canvas';
 import {Login_overlay} from './Login';
-import "../../Canvas/dist/game_loop.js"
 
 function App() {
   const [selectedTool, setSelectedTool] = useState<string>("");
