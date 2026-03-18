@@ -1,5 +1,6 @@
 import brushIcon from './assets/paint-brush.svg'
 import squareIcon from './assets/square.svg'
+import './topBar.css'
 
 interface TopBarProps {
   currentTool: string;
@@ -7,8 +8,8 @@ interface TopBarProps {
 
 // Map the tool names to their imported icons
 const toolIcons: Record<string, string> = {
-  brush: brushIcon,
-  square: squareIcon,
+  Brush: brushIcon,
+  Rectangle: squareIcon,
 };
 
 export function TopBar({ currentTool }: TopBarProps) {

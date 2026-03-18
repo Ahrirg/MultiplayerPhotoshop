@@ -1,4 +1,5 @@
 import './Containers.css'
+import './LeftButtons.css'
 import brushIcon from './assets/paint-brush.svg'
 import squareIcon from './assets/square.svg'
 import { ModifyPlayerState } from '../../Canvas/player_state'
