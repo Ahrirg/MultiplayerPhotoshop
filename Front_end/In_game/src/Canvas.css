@@ -1,9 +1,11 @@
-.canvas {
-  height:700px;
-  width:1000px;
+#glCanvas {
+  height: 800px;
+  width:1200px;
   margin: auto;
 
   align-items: center;
   justify-content: center;
   background: #ffffff;
+  box-shadow: 0 5px 10px rgb(0, 0, 0); 
+  box-sizing: border-box;
 }

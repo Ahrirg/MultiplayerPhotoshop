@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import '../Containers.css';
+import '../Layers.css';
 import eyeOpen from '../assets/eyeVisibile.svg';
 import eyeClosed from '../assets/eyeClosed.svg';
 
@@ -9,7 +10,7 @@ interface Layer {
   visible: boolean;
 }
 
-export function Layers() { //CHATGPT SHIT.................................
+export function Layers() {
   const [layers, setLayers] = useState<Layer[]>([
     { id: 1, name: 'Background', visible: true },
   ]);
