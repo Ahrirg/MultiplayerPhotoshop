@@ -3,11 +3,13 @@ set -e
 
 echo "=== BUILD FRONT PAGE ==="
 
+mkdir -p ./Back_end_authority/static/dist
+
 cd ./Front_end/Pre_game
 npm install
 npm run build
 mv ./dist/index.html ./dist/frontpage.html
-cp -r ./dist/ ../../Back_end_authority/static
+cp -r ./dist/ ../../Back_end_authority/static/dist
 cd ../../
 
 
@@ -18,7 +20,7 @@ cd ./Front_end/In_game
 npm install
 npm run build
 mv ./dist/index.html ./dist/game.html
-cp -r ./dist/ ../../Back_end_authority/static
+cp -r ./dist/ ../../Back_end_authority/static/dist
 cd ../../
 
 
