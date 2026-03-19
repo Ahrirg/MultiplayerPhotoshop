@@ -15,7 +15,7 @@ export function Login_overlay({ setUsername, setSessionIp, mainServerIp } : Logi
     const [name, setName] = useState("");
     const [session, setSession] = useState("");
     
-
+    
     async function getIp(): Promise<string | null> {
         try {
             const response = await axios.get(`${mainServerIp}/join/${session}`);
@@ -26,8 +26,13 @@ export function Login_overlay({ setUsername, setSessionIp, mainServerIp } : Logi
     }
 
     const handleJoin = async () => {
-        const ip = await getIp();
+        let ip = await getIp();
         if (ip) {
+            if (ip.includes("localhost")) {
+                const ipt = window.location.hostname.split(":")[0];
+
+                ip = `http://${ipt}:3000`;
+            }
             setUsername(name);
             setSessionIp(ip);
 
