@@ -1,10 +1,11 @@
-import {ObjectType } from "./objects.js";
+// import {ObjectType } from "./objects.js";
 import {ModifyPlayerState, GetPlayerState, PlayerAction, GenerateTemporaryObject} from "./player_state.js";
 
 // TODO: set state from "Drawing" to "Idle" if the cursor leaves the canvas
 
 export function initInputHandling(canvasID: string): void
 {
+    canvasID; //TO FIX SOO I COULD BUILD THE FCKING APP @GUSTAI ?????????????????????????????????, go to In_game and run `npm run build` to try and build if no worky FIX
     const canvas = document.getElementById("glCanvas");
 
     canvas!.addEventListener("mousedown", mousePressed);
@@ -27,6 +28,7 @@ export function initInputHandling(canvasID: string): void
 function mousePressed()
 {
     const currState = GetPlayerState();
+    currState; // CANT BUILD
 
     if(GetPlayerState().action == PlayerAction.Idle)
     {

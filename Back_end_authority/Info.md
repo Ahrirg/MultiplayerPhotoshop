@@ -10,5 +10,5 @@ uv sync
 
 ## To run server type:
 ```bash
-fastapi dev main.py
+uv run fastapi dev main.py
 ```

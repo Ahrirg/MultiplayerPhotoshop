@@ -1,10 +1,5 @@
 import { useEffect, useState } from 'react';
-import './LandingPage.css';
-
-interface TeamMember {
-  name: string;
-  role: string;
-}
+import './Landingpage.css';
 
 interface SplatProps {
   top?: string;
