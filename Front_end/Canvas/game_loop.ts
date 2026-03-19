@@ -1,8 +1,8 @@
 import { compileWebGLShader, createWebGLContext, createWebGLProgram, renderWebGLCanvas, setupWebGLBuffers, updateWebGLBuffers, setupWebGLVertexLayout } from "./renderer.js";
 import { vertexShaderSource, fragmentShaderSource } from "./shaders.js";
-import { Obj, ObjectType, GenerateObj, bakeObjectsToGPUArrays, SetObjArray, GetObjArray } from "./objects.js";
+import { bakeObjectsToGPUArrays, GetObjArray } from "./objects.js";
 import { initInputHandling } from "./input_handling.js";
-import { GetPlayerState, HandleTemporaryObjects } from "./player_state.js";
+import { HandleTemporaryObjects } from "./player_state.js";
 
 let vertexBuffer: WebGLBuffer
 let indexBuffer: WebGLBuffer

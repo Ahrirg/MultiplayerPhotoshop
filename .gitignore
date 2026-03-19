@@ -122,3 +122,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+
+Back_end_authority/static/*

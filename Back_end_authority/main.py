@@ -41,7 +41,8 @@ if not INTERNAL_API_TOKEN:
 SERVICE_PORT = int(os.getenv("SERVICE_PORT", 3000))
 
 app = FastAPI()
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory="static/dist"), name="static")
+app.mount("/assets", StaticFiles(directory="static/dist/assets"), name="assets")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # fix this in future
@@ -81,7 +82,12 @@ def not_found(request, exc):
 @app.get("/")
 def read_root():
     #return {"Authority server": "Hello world"}
-    return FileResponse("static/index.html")
+    return FileResponse("./static/dist/frontpage.html")
+
+@app.get("/game")
+def read_root():
+    #return {"Authority server": "Hello world"}
+    return FileResponse("./static/dist/game.html")
 
 @app.get("/join/{sessionId}")
 def get_ip_from_id(sessionId: str, x_api_token: str | None = Header(None)):
