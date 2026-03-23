@@ -23,8 +23,8 @@ interface PlayerState
 
 let State: PlayerState =
 {
-    selectedTool: ObjectType.Star, 
-    selectedColor: [0,1,1,1], 
+    selectedTool: ObjectType.Brush, 
+    selectedColor: [0,0,0,1], 
     selectedObjectID: -1, 
     action: PlayerAction.Idle,
     mousePosX: 0,

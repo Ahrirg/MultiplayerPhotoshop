@@ -101,7 +101,7 @@ export function setupWebGLVertexLayout(gl: WebGLRenderingContext, program: WebGL
 //
 export function renderWebGLCanvas(gl: WebGLRenderingContext, indices: Uint16Array)
 {
-    gl.clearColor(1.0, 0.0, 0.0, 1.0);
+    gl.clearColor(1.0, 1.0, 1.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
 }
