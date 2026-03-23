@@ -1,6 +1,6 @@
 import { compileWebGLShader, createWebGLContext, createWebGLProgram, renderWebGLCanvas, setupWebGLBuffers, updateWebGLBuffers, setupWebGLVertexLayout } from "./renderer.js";
 import { vertexShaderSource, fragmentShaderSource } from "./shaders.js";
-import { bakeObjectsToGPUArrays, GetObjArray } from "./objects.js";
+import { bakeObjectsToGPUArrays, GetObjArray, AppendObjArrayFront, GenerateObj, ObjectType } from "./objects.js";
 import { initInputHandling } from "./input_handling.js";
 import { HandleTemporaryObjects } from "./player_state.js";
 
@@ -35,6 +35,9 @@ export function initGameLoop()
     requestAnimationFrame(gameLoop)
 }
 
+initGameLoop();
+ 
+
 // Render/game loop
 function gameLoop()
 {
@@ -43,6 +46,8 @@ function gameLoop()
 
     /// Handling temporary object (object being created by user, or the selected object)
     HandleTemporaryObjects();
+
+    console.log(GetObjArray());
 
     /// Converting objects into render-ready arrays of vertices and indices
     let {vertices, indices} = bakeObjectsToGPUArrays(GetObjArray());
