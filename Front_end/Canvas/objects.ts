@@ -112,7 +112,6 @@ export function ConvertToGPUObj(object: Obj): GPUObj | null
     return null;
 }
 
-// TODO: IMPLEMENT
 // NOTE: in the future, this method may be optimized to change the number of points 
 // it uses to approximate an ellipse given the size of the ellipse as seen on the canvas
 // Converts a ellipse object into GPU-ready object
@@ -296,7 +295,7 @@ function StarToGPUObj(object: Obj): GPUObj {
         vertices.push(x, y, object.Color[0], object.Color[1], object.Color[2], object.Color[3]);
     }
 
-    for (let i = 1; i <= 9; i++) {
+    for (let i = 1; i <= 10; i++) {
         indices.push(centerIndex, i, i + 1);
     }
     indices[indices.length - 1] = 1;
