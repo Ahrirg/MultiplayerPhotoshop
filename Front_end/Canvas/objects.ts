@@ -3,10 +3,11 @@
 export enum ObjectType
 {
     None,
+    UIWireframe,
+    UIRotationIcon,
     Rectangle, 
     Line, 
     Brush,
-    // New objects
     Ellipse, 
     Star, 
     Triangle, 
@@ -33,12 +34,19 @@ export interface Obj
     Type: ObjectType,
     Points: number[],
     Color: [number, number, number, number],
-    ImageID: number | null
+    ImageID: number | null,
+    BoundingBoxPoints: [number, number, number, number], // (x1,y1,x2,y2)
     ExtraArgs: number[]
 }
 
-let objectArray: Obj[] = [GenerateObj(0, 0, ObjectType.Line, [-1.0,-1.0,-1.0,-1.0], [1,0,0,1], 0, [0.0])];
-
+let objectArray: Obj[] = 
+[
+    GenerateObj(0, 0, ObjectType.Line, [-1.0,-1.0,-1.0,-1.0], [0,0,0,0], 0, [0.0]),
+    GenerateObj(0, 0, ObjectType.Star, [0.3,0.3,0.8,0.8], [1,1,0,1], 0, [0.0]),
+    GenerateObj(0, 0, ObjectType.Arrow, [-0.3,-0.3,-0.8,-0.8], [0,0,1,1], 0, [0.0]),                        
+    GenerateObj(0, 0, ObjectType.Pentagon, [-0.3,0.3,-0.8,0.8], [0,1,0,1], 0, [0.0])                                         
+];
+let uiObjArray: Obj[] = [    GenerateObj(0, 0, ObjectType.Pentagon, [-0.35,0.3,-0.85,0.8], [0,0,0,1], 0, [0.0])  ];
 
 // Used for determining how to update temporary objects (a.k.a. whether to add cursor points to object or modify existing points)
 export function IsObjectTypeAppendable(objectType: ObjectType): boolean
@@ -58,6 +66,16 @@ export function SetObjArray(array: Obj[])
 export function GetObjArray(): Obj[]
 {
     return objectArray;
+}
+
+export function GetUIObjArray(): Obj[]
+{
+    return uiObjArray;
+}
+
+export function SetUIObjArray(array: Obj[])
+{
+    uiObjArray = array;
 }
 
 export function AddObject(object: Obj)
@@ -81,10 +99,49 @@ export function GenerateObj(userId: number, objectId: number, type: ObjectType, 
         Points: points,
         Color: color,
         ImageID: image,
+        BoundingBoxPoints: [0,0,0,0],
         ExtraArgs: extraargs
     }
 
+    ResetObjectBoundingBoxPoints(obj);
+
     return obj;
+}
+
+// Finds and sets correct bounding box points for an object 
+export function ResetObjectBoundingBoxPoints(object: Obj)
+{
+    const padding = 0.02;
+    const pts = object.Points;
+
+    if (!pts || pts.length < 2) {
+        object.BoundingBoxPoints = [0, 0, 0, 0];
+        return;
+    }
+
+    let minX = pts[0];
+    let minY = pts[1];
+    let maxX = pts[0];
+    let maxY = pts[1];
+
+    for (let i = 2; i < pts.length; i += 2) {
+        const x = pts[i];
+        const y = pts[i + 1];
+
+        if (x < minX) minX = x;
+        if (y < minY) minY = y;
+        if (x > maxX) maxX = x;
+        if (y > maxY) maxY = y;
+    }
+
+    object.BoundingBoxPoints = [minX-padding, minY-padding, maxX+padding, maxY+padding];
+}
+
+
+export function GenerateObjectID()
+{
+    // TO IMPLEMENT
+    return -1;
 }
 
 
@@ -107,13 +164,62 @@ export function ConvertToGPUObj(object: Obj): GPUObj | null
         return PentagonToGPUObj(object);
     if(object.Type == ObjectType.Arrow)
         return ArrowToGPUObj(object);
+    if(object.Type == ObjectType.UIWireframe)
+        return UIWireframeToGPUObj(object);
 
 
     return null;
 }
 
-// NOTE: in the future, this method may be optimized to change the number of points 
-// it uses to approximate an ellipse given the size of the ellipse as seen on the canvas
+function UIWireframeToGPUObj(object: Obj): GPUObj {
+    const vertices: number[] = [];
+    const indices: number[] = [];
+
+    const [x0, y0, x1, y1] = object.Points;
+
+    const minX = Math.min(x0, x1);
+    const maxX = Math.max(x0, x1);
+    const minY = Math.min(y0, y1);
+    const maxY = Math.max(y0, y1);
+
+    function pushRect(xA: number, yA: number, xB: number, yB: number) {
+        const baseLength = vertices.length / 6;
+
+        vertices.push(
+            xA, yA, object.Color[0], object.Color[1], object.Color[2], object.Color[3],
+            xB, yA, object.Color[0], object.Color[1], object.Color[2], object.Color[3],
+            xB, yB, object.Color[0], object.Color[1], object.Color[2], object.Color[3],
+            xA, yB, object.Color[0], object.Color[1], object.Color[2], object.Color[3],
+        );
+
+        indices.push(
+            baseLength, baseLength + 1, baseLength + 2,
+            baseLength + 2, baseLength + 3, baseLength
+        );
+    }
+
+    // Top edge
+    pushRect(minX, maxY - object.ExtraArgs[0], maxX, maxY);
+
+    // Bottom edge
+    pushRect(minX, minY, maxX, minY + object.ExtraArgs[0]);
+
+    // Left edge
+    pushRect(minX, minY, minX + object.ExtraArgs[0], maxY);
+
+    // Right edge
+    pushRect(maxX - object.ExtraArgs[0], minY, maxX, maxY);
+
+    return {
+        UsrID: object.UsrID,
+        ObjID: object.ObjID,
+        Vertices: vertices,
+        Indices: indices,
+        Type: object.Type,
+        Image: null
+    };
+}
+
 // Converts a ellipse object into GPU-ready object
 function EllipseToGPUObj(object: Obj): GPUObj {
     const vertices: number[] = [];
@@ -205,10 +311,6 @@ function ArrowToGPUObj(object: Obj): GPUObj {
 }
 
 // Converts a pentagon object into GPU-ready object
-// note: you may say ths is just a slightly altered version of the ellipse function. 
-// well, you're right. You *could* technically make a single function which takes a 
-// hard-coded shape point array which would be more elegant, but this is faster to implement :)
-// area for improvement in the future. 
 function PentagonToGPUObj(object: Obj): GPUObj
 {
     const vertices: number[] = [];
@@ -485,4 +587,24 @@ export function bakeObjectsToGPUArrays(objectArray: Obj[]): {vertices: Float32Ar
     let indices = new Uint16Array(indicesTemporary);
 
     return {vertices, indices};
+}
+
+// Finds the most recently created object which the cursor is in the bounds of
+export function CursorObjectCollision(xpos: number, ypos: number)
+{
+    for(let i = objectArray.length - 1; i >= 0; i--)
+    {
+
+        const obj = objectArray[i];
+
+        if (
+            xpos >= obj.BoundingBoxPoints[0] && xpos <= obj.BoundingBoxPoints[2] &&
+            ypos >= obj.BoundingBoxPoints[1] && ypos <= obj.BoundingBoxPoints[3]
+        ) {
+            console.log("COLLIDED WITH OBJECT OF TYPE " + obj.Type + ", OBJ ARRAY SIZE IS: " + objectArray.length)
+            return obj;
+        }
+    }
+
+    return null;
 }
