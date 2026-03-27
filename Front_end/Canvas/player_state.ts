@@ -54,13 +54,51 @@ export function HandleUIObjects(): void
 
     if([PlayerAction.Selecting, PlayerAction.MovingObject, PlayerAction.RotatingObject].includes(GetPlayerState().action))
     {
-        // Draw wireframe and rotation icon
-        const boundPoints = GetPlayerState().selectedObject?.BoundingBoxPoints!;
-        uiObjArray.push(GenerateObj(GetPlayerState().userID, -1, ObjectType.UIWireframe, 
-        [boundPoints[0], boundPoints[1], boundPoints[2], boundPoints[3]], [1,0,0,1], 0, [0.01]));
+        const sObj = State.selectedObject!;
+        // Draw wireframe
+        const boundPoints = sObj.BoundingBoxPoints;
+        uiObjArray.push(GenerateObj(State.userID, -1, ObjectType.UIWireframe, 
+        [boundPoints[0], boundPoints[1], boundPoints[2], boundPoints[3]], [0,0,0,1], 0, [0.005])); 
+
+        // Draw rotation icon
+        const cx = (boundPoints[0]+boundPoints[2])/2;
+        const cy = (boundPoints[1]+boundPoints[3])/2;
+        const len = Math.sqrt(Math.pow(boundPoints[0]-boundPoints[2], 2) + Math.pow(boundPoints[1]-boundPoints[3], 2))/ 2 + 0.05;
+
+        uiObjArray.push(GenerateRotationIcon(sObj, boundPoints)); 
+
+        console.log(sObj.Type + " " + [cx, cy]);
+
     }
 
     SetUIObjArray(uiObjArray);
+}
+
+export function CursorRotationIconCollision(xpos: number, ypos: number): Boolean
+{
+    const sObj = GetPlayerState().selectedObject!;
+    const boundPoints = sObj!.BoundingBoxPoints;
+    const tempObj = GenerateRotationIcon(sObj, boundPoints);
+
+    const x0 = tempObj.Points[0] - 0.05;
+    const y0 = tempObj.Points[1] - 0.05;
+    const x1 = tempObj.Points[0] + 0.05;
+    const y1 = tempObj.Points[1] + 0.05;
+
+    if(xpos >= x0 && ypos >= y0 && xpos <= x1 && ypos <= y1)
+        return true;
+
+    return false;
+}
+
+export function GenerateRotationIcon(sObj: Obj, boundPoints: number[])
+{   
+    const cx = (boundPoints[0]+boundPoints[2])/2;
+    const cy = (boundPoints[1]+boundPoints[3])/2;
+    const len = Math.sqrt(Math.pow(boundPoints[0]-boundPoints[2], 2) + Math.pow(boundPoints[1]-boundPoints[3], 2))/ 2 + 0.05;
+
+    return GenerateObj(State.userID, -1, ObjectType.UIRotationIcon, 
+    [cx + Math.cos(sObj.Angle)*len, cy + Math.sin(sObj.Angle)*len], [0,0,0,0], 0, []); 
 }
 
 // TEMPORARY OBJECT RELATED CODE
@@ -92,13 +130,25 @@ export function HandleObjectModification(): void
     else if(State.action == PlayerAction.RotatingObject)
     {
         // Take mouse position
+        let newAngle = FindCursorAngleRelativeToObject();
 
-        // Calculate angle and remove from current angle
-
-        // Matmul to rotate all vertices accordingly
-
-        // Update object bounding box
+        // Change angle of object
+        State.selectedObject!.Angle = newAngle;
     }
+}
+
+export function FindCursorAngleRelativeToObject(): number
+{
+    const sObj = State.selectedObject!;
+    const bounds = sObj.BoundingBoxPoints;
+
+    const cx = (bounds[0] + bounds[2]) / 2;
+    const cy = (bounds[1] + bounds[3]) / 2;
+
+    const dx = State.mousePosX - cx;
+    const dy = State.mousePosY - cy;
+
+    return Math.atan2(dy, dx);
 }
 
 export function GenerateTemporaryObject(): void

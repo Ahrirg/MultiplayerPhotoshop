@@ -13,7 +13,6 @@ export function initGameLoop()
 
     let {vertices, indices} = bakeObjectsToGPUArrays(GetObjArray());
 
-
     // WebGL renderer initialization
     glContext = createWebGLContext('glCanvas');
 
@@ -42,9 +41,8 @@ initGameLoop();
 function gameLoop()
 {
     // Testing stuff
-    console.log(GetPlayerState().selectedObject?.Type);
-    console.log("--- " + GetPlayerState().action);
-
+    GetObjArray()[1].Angle += 0.05;
+    console.log(GetPlayerState().action);
 
 
     /// Handling updates from server
@@ -56,7 +54,6 @@ function gameLoop()
 
     // Combining canvas objects with canvas UI elements
     const combinedObjectArray = [... GetObjArray(), ... GetUIObjArray()];
-    console.log(GetUIObjArray().length);
     /// Converting objects into render-ready arrays of vertices and indices
     let {vertices, indices} = bakeObjectsToGPUArrays(combinedObjectArray);
 

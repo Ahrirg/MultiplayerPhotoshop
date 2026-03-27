@@ -1,7 +1,7 @@
 // import {ObjectType } from "./objects.js";
 import { GenerateMessage, MessageType, SendMessage } from "./communication.js";
-import { ObjectType, CursorObjectCollision } from "./objects.js";
-import {ModifyPlayerState, GetPlayerState, PlayerAction, GenerateTemporaryObject} from "./player_state.js";
+import { ObjectType, CursorObjectCollision, ResetObjectBoundingBoxPoints } from "./objects.js";
+import {ModifyPlayerState, GetPlayerState, PlayerAction, GenerateTemporaryObject, CursorRotationIconCollision} from "./player_state.js";
 
 // TODO: set state from "Drawing" to "Idle" if the cursor leaves the canvas
 
@@ -44,22 +44,6 @@ function mousePressed()
     const currState = GetPlayerState();
 
 
-        // clicked on canvas without a tool -> trying to select an object
-    if (GetPlayerState().selectedTool == ObjectType.None)
-    {
-        console.log("Trying to select");
-
-        // Call a function for collision checking, return correct object
-        const selectedObj = CursorObjectCollision(GetPlayerState().mousePosX, GetPlayerState().mousePosY);
-
-        // Set currently selected object to the object we just found
-        if(selectedObj != null)
-            ModifyPlayerState({action: PlayerAction.Selecting, selectedObject: selectedObj});
-        else
-            ModifyPlayerState({action: PlayerAction.Idle, selectedObject: null});
-
-    }
-
     if(GetPlayerState().action == PlayerAction.Idle)
     {
         // clicked on canvas with a tool -> trying to draw
@@ -71,11 +55,32 @@ function mousePressed()
     } 
     else if(GetPlayerState().action == PlayerAction.Selecting)
     {
-        // Trying to move object
+        // Trying to move object (OR rotate object)
         if (GetPlayerState().selectedTool == ObjectType.None)
         {
-
+            // Check possible collision cases
+            if(CursorRotationIconCollision(GetPlayerState().mousePosX, GetPlayerState().mousePosY))
+                {
+                    ModifyPlayerState({action: PlayerAction.RotatingObject});
+                    console.log("ROTATING!!!");
+                    return;
+                }
         }
+    }
+
+    // clicked on canvas without a tool -> trying to select an object
+    if (GetPlayerState().selectedTool == ObjectType.None)
+    {
+
+        // Call a function for collision checking, return correct object
+        const selectedObj = CursorObjectCollision(GetPlayerState().mousePosX, GetPlayerState().mousePosY);
+
+        // Set currently selected object to the object we just found
+        if(selectedObj != null)
+            ModifyPlayerState({action: PlayerAction.Selecting, selectedObject: selectedObj});
+        else
+            ModifyPlayerState({action: PlayerAction.Idle, selectedObject: null});
+
     }
 }
 
@@ -88,5 +93,10 @@ function mouseReleased()
         // Sending message about object creation to server
         const creationMessage: string = GenerateMessage(GetPlayerState().tempObject, MessageType.ObjectCreated);
         SendMessage(creationMessage);
+    }
+    if(GetPlayerState().action == PlayerAction.RotatingObject) // Mouse released -> was rotating, done now
+    {
+        ModifyPlayerState({action: PlayerAction.Selecting});
+        ResetObjectBoundingBoxPoints(GetPlayerState().selectedObject!);
     }
 }

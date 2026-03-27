@@ -1,13 +1,11 @@
-
-// Enum for object types
 export enum ObjectType
 {
     None,
     UIWireframe,
-    UIRotationIcon,
+    UIRotationIcon, // Points[0] = x position, Points[1] - y position
     Rectangle, 
-    Line, 
-    Brush,
+    Line, // Extraargs[0] contains thickness
+    Brush,  // Extraargs[0] contains thickness
     Ellipse, 
     Star, 
     Triangle, 
@@ -36,6 +34,7 @@ export interface Obj
     Color: [number, number, number, number],
     ImageID: number | null,
     BoundingBoxPoints: [number, number, number, number], // (x1,y1,x2,y2)
+    Angle: number, 
     ExtraArgs: number[]
 }
 
@@ -44,9 +43,11 @@ let objectArray: Obj[] =
     GenerateObj(0, 0, ObjectType.Line, [-1.0,-1.0,-1.0,-1.0], [0,0,0,0], 0, [0.0]),
     GenerateObj(0, 0, ObjectType.Star, [0.3,0.3,0.8,0.8], [1,1,0,1], 0, [0.0]),
     GenerateObj(0, 0, ObjectType.Arrow, [-0.3,-0.3,-0.8,-0.8], [0,0,1,1], 0, [0.0]),                        
-    GenerateObj(0, 0, ObjectType.Pentagon, [-0.3,0.3,-0.8,0.8], [0,1,0,1], 0, [0.0])                                         
+    GenerateObj(0, 0, ObjectType.Pentagon, [-0.3,0.3,-0.8,0.8], [0,1,0,1], 0, [0.0]),                            
+    GenerateObj(-1, -1, ObjectType.UIRotationIcon, [-0.05, -0.05, 0.05, 0.05], [0,0,0,1], 0, [0.005])
 ];
-let uiObjArray: Obj[] = [    GenerateObj(0, 0, ObjectType.Pentagon, [-0.35,0.3,-0.85,0.8], [0,0,0,1], 0, [0.0])  ];
+let uiObjArray: Obj[] = [
+];
 
 // Used for determining how to update temporary objects (a.k.a. whether to add cursor points to object or modify existing points)
 export function IsObjectTypeAppendable(objectType: ObjectType): boolean
@@ -88,6 +89,28 @@ export function AppendObjArrayFront(object: Obj)
     objectArray.unshift(object);
 }
 
+
+
+export function RotateGPUObj(gpuObj: GPUObj, cx: number, cy: number, angle: number)
+{
+
+    // for efficiency
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+
+    for (let i = 0; i < gpuObj.Vertices.length; i += 6)
+    {
+        const x = gpuObj.Vertices[i];
+        const y = gpuObj.Vertices[i + 1];
+
+        const dx = x - cx;
+        const dy = y - cy;
+
+        gpuObj.Vertices[i]     = cx + dx * cos - dy * sin;
+        gpuObj.Vertices[i + 1] = cy + dx * sin + dy * cos;
+    }
+}
+
 // Helper function for generating objects
 export function GenerateObj(userId: number, objectId: number, type: ObjectType, points: number[],
      color: [number, number, number, number], image: number, extraargs: number[]): Obj
@@ -99,7 +122,8 @@ export function GenerateObj(userId: number, objectId: number, type: ObjectType, 
         Points: points,
         Color: color,
         ImageID: image,
-        BoundingBoxPoints: [0,0,0,0],
+        BoundingBoxPoints: [0,0,0,0], 
+        Angle: 0, 
         ExtraArgs: extraargs
     }
 
@@ -112,21 +136,23 @@ export function GenerateObj(userId: number, objectId: number, type: ObjectType, 
 export function ResetObjectBoundingBoxPoints(object: Obj)
 {
     const padding = 0.02;
-    const pts = object.Points;
 
-    if (!pts || pts.length < 2) {
-        object.BoundingBoxPoints = [0, 0, 0, 0];
-        return;
-    }
+    const gpuObj = ConvertToGPUObj(object)!;
+    RotateGPUObj(gpuObj, 
+                (object.BoundingBoxPoints[2]+object.BoundingBoxPoints[0])/2,
+                (object.BoundingBoxPoints[3]+object.BoundingBoxPoints[1])/2, 
+                object.Angle
+            )
+    const verts = gpuObj.Vertices;
 
-    let minX = pts[0];
-    let minY = pts[1];
-    let maxX = pts[0];
-    let maxY = pts[1];
+    let minX = verts[0];
+    let minY = verts[1];
+    let maxX = verts[0];
+    let maxY = verts[1];
 
-    for (let i = 2; i < pts.length; i += 2) {
-        const x = pts[i];
-        const y = pts[i + 1];
+    for (let i = 6; i < verts.length; i += 6) {
+        const x = verts[i];
+        const y = verts[i + 1];
 
         if (x < minX) minX = x;
         if (y < minY) minY = y;
@@ -134,7 +160,7 @@ export function ResetObjectBoundingBoxPoints(object: Obj)
         if (y > maxY) maxY = y;
     }
 
-    object.BoundingBoxPoints = [minX-padding, minY-padding, maxX+padding, maxY+padding];
+    object.BoundingBoxPoints = [minX - padding, minY - padding, maxX + padding, maxY + padding];
 }
 
 
@@ -166,7 +192,8 @@ export function ConvertToGPUObj(object: Obj): GPUObj | null
         return ArrowToGPUObj(object);
     if(object.Type == ObjectType.UIWireframe)
         return UIWireframeToGPUObj(object);
-
+    if(object.Type == ObjectType.UIRotationIcon)
+        return UIRotationIconToGPUObj(object);
 
     return null;
 }
@@ -215,6 +242,28 @@ function UIWireframeToGPUObj(object: Obj): GPUObj {
         ObjID: object.ObjID,
         Vertices: vertices,
         Indices: indices,
+        Type: object.Type,
+        Image: null
+    };
+}
+
+export function UIRotationIconToGPUObj(object: Obj): GPUObj
+{
+    // hard-coded icon vertices
+    let iconVertices = [0.011588137289060524,-0.03566461936106826,0,0,0,1,0.0031868316514665415,-0.03736434268156221,0,0,0,1,-0.005380973324669226,-0.037111927005737635,0,0,0,1,-0.013667643745468132,-0.034920560053455126,0,0,0,1,-0.021240233884681232,-0.030904732073325593,0,0,0,1,-0.027703105884046744,-0.02527425418043616,0,0,0,1,-0.032718600265229894,-0.018323296556135814,0,0,0,1,-0.03602467730092258,-0.010415019220548445,0,0,0,1,-0.03744860755329652,-0.001962598359110397,0,0,0,1,-0.03691599630337094,0.006592360497538301,0,0,0,1,-0.03445467038058369,0.014802894614410034,0,0,0,1,-0.030193224321107184,0.0222400360857464,0,0,0,1,-0.024354301812381886,0.02851522371000116,0,0,0,1,-0.017242963441794747,0.033300603774480284,0,0,0,1,-0.009230748488587223,0.036346159114003296,0,0,0,1,-0.000736263467273561,0.037492771518077436,0,0,0,1,0.007796688405665969,0.03668053502751771,0,0,0,1,0.01592229417302675,0.03395188578367332,0,0,0,1,0.023216023099118785,0.029449384908027926,0,0,0,1,0.02929680672017844,0.02340827024793818,0,0,0,1,0.03384694816311977,0.01614416613031107,0,0,0,1,0.036628720549532715,0.008036593239939417,0,0,0,1,0.037496787284025265,-0.000490859833925418,0,0,0,1,0.036405795316009806,-0.008992667424563137,0,0,0,1,0.0334127446570638,-0.017024643740233006,0,0,0,1,0.006952882373436317,-0.021398771616640958,0,0,0,1,0.0019120989908799207,-0.022418605608937325,0,0,0,1,-0.00322858399480154,-0.022267156203442582,0,0,0,1,-0.008200586247280879,-0.02095233603207308,0,0,0,1,-0.012744140330808743,-0.018542839243995357,0,0,0,1,-0.01662186353042805,-0.015164552508261694,0,0,0,1,-0.019631160159137934,-0.010993977933681488,0,0,0,1,-0.021614806380553547,-0.0062490115323290685,0,0,0,1,-0.022469164531977913,-0.001177559015466241,0,0,0,1,-0.022149597782022565,0.0039554162985229804,0,0,0,1,-0.02067280222835021,0.008881736768646016,0,0,0,1,-0.018115934592664307,0.013344021651447838,0,0,0,1,-0.014612581087429133,0.017109134226000702,0,0,0,1,-0.010345778065076847,0.019980362264688162,0,0,0,1,-0.005538449093152334,0.021807695468401986,0,0,0,1,-0.0004417580803641394,0.022495662910846467,0,0,0,1,0.004678013043399584,0.022008321016510637,0,0,0,1,0.009553376503816054,0.020371131470203988,0,0,0,1,0.013929613859471265,0.017669630944816758,0,0,0,1,0.01757808403210706,0.014044962148762899,0,0,0,1,0.02030816889787186,0.00968649967818664,0,0,0,1,0.021977232329719626,0.004821955943963646,0,0,0,1,0.022498072370415165,-0.0002945159003552508,0,0,0,1,0.021843477189605887,-0.005395600454737887,0,0,0,1,0.020047646794238275,-0.010214786244139802,0,0,0,1,0.03875878380219401,-0.019748586738670287,0,0,0,1,0.014701607649108064,-0.007490843245702525,0,0,0,1,0.021511430349024266,-0.020910723668469192,0,0,0,1];
+    const iconIndices = [0,1,26,0,26,25,1,2,27,1,27,26,2,3,28,2,28,27,3,4,29,3,29,28,4,5,30,4,30,29,5,6,31,5,31,30,6,7,32,6,32,31,7,8,33,7,33,32,8,9,34,8,34,33,9,10,35,9,35,34,10,11,36,10,36,35,11,12,37,11,37,36,12,13,38,12,38,37,13,14,39,13,39,38,14,15,40,14,40,39,15,16,41,15,41,40,16,17,42,16,42,41,17,18,43,17,43,42,18,19,44,18,44,43,19,20,45,19,45,44,20,21,46,20,46,45,21,22,47,21,47,46,22,23,48,22,48,47,23,24,49,23,49,48,50,51,52];
+
+    for(let i = 0; i < iconVertices.length; i+=6)
+    {
+        iconVertices[i] += object.Points[0];
+        iconVertices[i+1] += object.Points[1];
+    }
+
+    return {
+        UsrID: object.UsrID,
+        ObjID: object.ObjID,
+        Vertices: iconVertices,
+        Indices: iconIndices,
         Type: object.Type,
         Image: null
     };
@@ -577,7 +626,18 @@ export function bakeObjectsToGPUArrays(objectArray: Obj[]): {vertices: Float32Ar
 
     for(let i = 0; i < objectArray.length; i++)
     {
-        const newObj = ConvertToGPUObj(objectArray[i])!;
+        const object = objectArray[i];
+        let newObj = ConvertToGPUObj(object)!;
+        // rotating object
+        if(object.Angle != 0)
+        {
+            RotateGPUObj(newObj, 
+                (object.BoundingBoxPoints[2]+object.BoundingBoxPoints[0])/2,
+                (object.BoundingBoxPoints[3]+object.BoundingBoxPoints[1])/2, 
+                object.Angle
+            )
+        }
+
         let currentNumVertices = verticesTemporary.length / 6;
         verticesTemporary = verticesTemporary.concat(newObj.Vertices);
         indicesTemporary = indicesTemporary.concat(newObj.Indices.map(x => currentNumVertices+x));
@@ -597,11 +657,9 @@ export function CursorObjectCollision(xpos: number, ypos: number)
 
         const obj = objectArray[i];
 
-        if (
-            xpos >= obj.BoundingBoxPoints[0] && xpos <= obj.BoundingBoxPoints[2] &&
-            ypos >= obj.BoundingBoxPoints[1] && ypos <= obj.BoundingBoxPoints[3]
-        ) {
-            console.log("COLLIDED WITH OBJECT OF TYPE " + obj.Type + ", OBJ ARRAY SIZE IS: " + objectArray.length)
+        if ( xpos >= obj.BoundingBoxPoints[0] && xpos <= obj.BoundingBoxPoints[2] &&
+            ypos >= obj.BoundingBoxPoints[1] && ypos <= obj.BoundingBoxPoints[3]) 
+        {
             return obj;
         }
     }
