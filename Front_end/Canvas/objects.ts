@@ -35,19 +35,12 @@ export interface Obj
     ImageID: number | null,
     BoundingBoxPoints: [number, number, number, number], // (x1,y1,x2,y2)
     Angle: number, 
+    PivotPoint: [number, number],
     ExtraArgs: number[]
 }
 
-let objectArray: Obj[] = 
-[
-    GenerateObj(0, 0, ObjectType.Line, [-1.0,-1.0,-1.0,-1.0], [0,0,0,0], 0, [0.0]),
-    GenerateObj(0, 0, ObjectType.Star, [0.3,0.3,0.8,0.8], [1,1,0,1], 0, [0.0]),
-    GenerateObj(0, 0, ObjectType.Arrow, [-0.3,-0.3,-0.8,-0.8], [0,0,1,1], 0, [0.0]),                        
-    GenerateObj(0, 0, ObjectType.Pentagon, [-0.3,0.3,-0.8,0.8], [0,1,0,1], 0, [0.0]),                            
-    GenerateObj(-1, -1, ObjectType.UIRotationIcon, [-0.05, -0.05, 0.05, 0.05], [0,0,0,1], 0, [0.005])
-];
-let uiObjArray: Obj[] = [
-];
+let objectArray: Obj[] = [GenerateObj(0, 0, ObjectType.Line, [-1.0,-1.0,-1.0,-1.0], [0,0,0,0], 0, [0.0])];
+let uiObjArray: Obj[] = [];
 
 // Used for determining how to update temporary objects (a.k.a. whether to add cursor points to object or modify existing points)
 export function IsObjectTypeAppendable(objectType: ObjectType): boolean
@@ -93,7 +86,6 @@ export function AppendObjArrayFront(object: Obj)
 
 export function RotateGPUObj(gpuObj: GPUObj, cx: number, cy: number, angle: number)
 {
-
     // for efficiency
     const cos = Math.cos(angle);
     const sin = Math.sin(angle);
@@ -124,10 +116,15 @@ export function GenerateObj(userId: number, objectId: number, type: ObjectType, 
         ImageID: image,
         BoundingBoxPoints: [0,0,0,0], 
         Angle: 0, 
+        PivotPoint: [0, 0],
         ExtraArgs: extraargs
     }
 
     ResetObjectBoundingBoxPoints(obj);
+    const cx = (obj.BoundingBoxPoints[0]+obj.BoundingBoxPoints[2])/2;
+    const cy = (obj.BoundingBoxPoints[1]+obj.BoundingBoxPoints[3])/2;
+
+    obj.PivotPoint = [cx, cy];
 
     return obj;
 }
@@ -139,8 +136,8 @@ export function ResetObjectBoundingBoxPoints(object: Obj)
 
     const gpuObj = ConvertToGPUObj(object)!;
     RotateGPUObj(gpuObj, 
-                (object.BoundingBoxPoints[2]+object.BoundingBoxPoints[0])/2,
-                (object.BoundingBoxPoints[3]+object.BoundingBoxPoints[1])/2, 
+                object.PivotPoint[0],
+                object.PivotPoint[1],
                 object.Angle
             )
     const verts = gpuObj.Vertices;
@@ -631,9 +628,9 @@ export function bakeObjectsToGPUArrays(objectArray: Obj[]): {vertices: Float32Ar
         // rotating object
         if(object.Angle != 0)
         {
-            RotateGPUObj(newObj, 
-                (object.BoundingBoxPoints[2]+object.BoundingBoxPoints[0])/2,
-                (object.BoundingBoxPoints[3]+object.BoundingBoxPoints[1])/2, 
+            RotateGPUObj(newObj,
+                object.PivotPoint[0],
+                object.PivotPoint[1],
                 object.Angle
             )
         }

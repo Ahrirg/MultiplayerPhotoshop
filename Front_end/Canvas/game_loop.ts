@@ -41,9 +41,6 @@ initGameLoop();
 function gameLoop()
 {
     // Testing stuff
-    GetObjArray()[1].Angle += 0.05;
-    console.log(GetPlayerState().action);
-
 
     /// Handling updates from server
     // PLACEHOLDER

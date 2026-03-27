@@ -88,11 +88,20 @@ function mouseReleased()
 {
     if(GetPlayerState().action == PlayerAction.Drawing) // Mouse released -> was drawing, done now
     {
-        ModifyPlayerState({action: PlayerAction.Idle});
+        const tempObj = GetPlayerState().tempObject!;
+
+        ResetObjectBoundingBoxPoints(tempObj);
+        const cx = (tempObj.BoundingBoxPoints[0]+tempObj.BoundingBoxPoints[2])/2;
+        const cy = (tempObj.BoundingBoxPoints[1]+tempObj.BoundingBoxPoints[3])/2;
+
+        tempObj.PivotPoint = [cx, cy];
 
         // Sending message about object creation to server
-        const creationMessage: string = GenerateMessage(GetPlayerState().tempObject, MessageType.ObjectCreated);
+        const creationMessage: string = GenerateMessage(tempObj, MessageType.ObjectCreated);
         SendMessage(creationMessage);
+
+
+        ModifyPlayerState({action: PlayerAction.Idle});
     }
     if(GetPlayerState().action == PlayerAction.RotatingObject) // Mouse released -> was rotating, done now
     {

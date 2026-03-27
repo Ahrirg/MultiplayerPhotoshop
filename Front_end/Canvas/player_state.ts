@@ -66,9 +66,6 @@ export function HandleUIObjects(): void
         const len = Math.sqrt(Math.pow(boundPoints[0]-boundPoints[2], 2) + Math.pow(boundPoints[1]-boundPoints[3], 2))/ 2 + 0.05;
 
         uiObjArray.push(GenerateRotationIcon(sObj, boundPoints)); 
-
-        console.log(sObj.Type + " " + [cx, cy]);
-
     }
 
     SetUIObjArray(uiObjArray);
@@ -112,7 +109,6 @@ export function HandleObjectModification(): void
         
         // Add (modify) points of temporary object
         UpdateTemporaryObject();
-        ResetObjectBoundingBoxPoints(GetPlayerState().tempObject!);
     }
     // If moving an object
     else if(State.action == PlayerAction.MovingObject)
@@ -125,6 +121,8 @@ export function HandleObjectModification(): void
 
         // Update object bounding box
 
+        // Update object pivot point
+
     }
     // If rotating an object
     else if(State.action == PlayerAction.RotatingObject)
@@ -134,6 +132,8 @@ export function HandleObjectModification(): void
 
         // Change angle of object
         State.selectedObject!.Angle = newAngle;
+
+        ResetObjectBoundingBoxPoints(State.selectedObject!);
     }
 }
 
