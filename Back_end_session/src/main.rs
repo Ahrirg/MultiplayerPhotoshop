@@ -1,6 +1,10 @@
-use axum::{routing::{get, post}, Router};
+use axum::{
+    routing::{get, post}, 
+    Router
+};
 use tower_http::cors::{CorsLayer, Any};
 mod managers;
+use std::sync::Arc;
 
 #[tokio::main]
 async fn main() {
@@ -8,6 +12,7 @@ async fn main() {
     let addr = format!("0.0.0.0:{}", port);
 
     let chat_queue = managers::messages::ChatQueue::new();
+    let mouse_chat = Arc::new(managers::mousepointers::MousePointerState::new());
 
     let app = Router::new()
         .route("/", get(|| async { "Hello, World! from session rust server !!" }))
@@ -15,6 +20,8 @@ async fn main() {
         .route("/messages/get", get(managers::messages::handle_get_messages))
         .route("/messages/send", post(managers::messages::handle_add_message))
         .with_state(chat_queue)
+        .route("/websockets/mousepointers", get(managers::mousepointers::ws_handler))
+        .with_state(mouse_chat)
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)
