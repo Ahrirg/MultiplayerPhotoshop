@@ -5,6 +5,8 @@
     "strict": true,
     "outDir": "./dist",
     "rootDir": ".",
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
     "erasableSyntaxOnly": false
   },
   "include": ["."],
