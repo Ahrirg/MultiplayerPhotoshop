@@ -19,3 +19,36 @@
   opacity: 0.5;
   font-style: italic;
 }
+
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 125px; /* adjust to match your indicator's width */
+}
+
+.top-button:hover {
+  background: #252525;
+}
+
+.top-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #2b2b2b;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  font-size: 12px;
+  transition: border-color 0.2s;
+}
+
+.top-button-swatch {
+  width: 15px;
+  height: 15px;
+  border-radius: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  flex-shrink: 0;
+}
