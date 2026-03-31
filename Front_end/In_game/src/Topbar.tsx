@@ -1,3 +1,4 @@
+import { useState, useRef } from 'react'
 import brushIcon from './assets/paint-brush.svg'
 import squareIcon from './assets/square.svg'
 import ellipseIcon from './assets/ellipse.svg'
@@ -5,6 +6,7 @@ import triangleIcon from './assets/triangle.svg'
 import pentagonIcon from './assets/pentagon.svg'
 import starIcon from './assets/star.svg'
 import arrowIcon from './assets/up-arrow.svg'
+import { ColorPicker } from './Components/ColorPicker'
 
 import './Css/topBar.css'
 
@@ -12,7 +14,6 @@ interface TopBarProps {
   currentTool: string;
 }
 
-// Map the tool names to their imported icons
 const toolIcons: Record<string, string> = {
   Brush: brushIcon,
   Rectangle: squareIcon,
@@ -24,9 +25,15 @@ const toolIcons: Record<string, string> = {
 };
 
 export function TopBar({ currentTool }: TopBarProps) {
+  const [showPicker, setShowPicker] = useState(false);
+  const [activeColor, setActiveColor] = useState('#FF0000');
+  const [hue, setHue] = useState(0);
+  const [brightness, setBrightness] = useState(50);
+  
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
   return (
     <div className="top">
-      {/* Left Corner Indicator */}
       <div className="top-tool-indicator">
         {currentTool ? (
           <>
@@ -36,6 +43,23 @@ export function TopBar({ currentTool }: TopBarProps) {
         ) : (
           <span className="no-tool">NO TOOL</span>
         )}
+      </div>
+
+      <div className="top-actions">
+        <div className="picker-wrapper">
+          <button
+            ref={buttonRef}
+            className="top-button"
+            onClick={() => setShowPicker(p => !p)}
+            style={{ borderColor: showPicker ? activeColor : 'transparent' }}>
+            <span className="top-button-swatch" style={{ background: activeColor }} />
+            <b>COLOR</b>
+        </button>
+
+          {showPicker && (
+            <ColorPicker onColorChange={setActiveColor} buttonRef={buttonRef} visible={showPicker} hue={hue} brightness={brightness} onHueChange={setHue} onBrightnessChange={setBrightness}/>
+          )}
+        </div>
       </div>
     </div>
   );
