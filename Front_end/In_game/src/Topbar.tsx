@@ -1,6 +1,12 @@
 import brushIcon from './assets/paint-brush.svg'
 import squareIcon from './assets/square.svg'
-import './topBar.css'
+import ellipseIcon from './assets/ellipse.svg'
+import triangleIcon from './assets/triangle.svg'
+import pentagonIcon from './assets/pentagon.svg'
+import starIcon from './assets/star.svg'
+import arrowIcon from './assets/up-arrow.svg'
+
+import './Css/topBar.css'
 
 interface TopBarProps {
   currentTool: string;
@@ -10,6 +16,11 @@ interface TopBarProps {
 const toolIcons: Record<string, string> = {
   Brush: brushIcon,
   Rectangle: squareIcon,
+  Ellipse: ellipseIcon,
+  Triangle: triangleIcon,
+  Pentagon: pentagonIcon,
+  Star: starIcon,
+  Arrow: arrowIcon,
 };
 
 export function TopBar({ currentTool }: TopBarProps) {
