@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
-import '../Containers.css';
-import '../Layers.css';
+import '../Css/Containers.css';
+import '../Css/Layers.css';
 import eyeOpen from '../assets/eyeVisibile.svg';
 import eyeClosed from '../assets/eyeClosed.svg';
 

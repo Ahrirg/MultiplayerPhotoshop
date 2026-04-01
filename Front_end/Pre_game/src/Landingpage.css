@@ -1,5 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600&display=swap');
 
+body {
+    background-color: #242424;
+}
 /* ── ROOT ─────────────────────────────────────── */
 .lp-root {
   position: relative;
@@ -269,4 +272,14 @@
   font-size: 0.75rem;
   color: #333;
   border-top: 1px solid #1a1a1a;
+}
+
+.active-servers {
+  font-family: 'Bebas Neue', sans-serif;
+  margin-top: 80px;
+  font-size: 50px;
+}
+.active-servers-bold {
+  font-weight:900;
+  color: rgb(7, 255, 7);
 }

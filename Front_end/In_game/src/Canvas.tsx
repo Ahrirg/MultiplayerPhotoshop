@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import './Canvas.css'
+import './Css/Canvas.css'
 
 interface CanvasProps {
   serverIP: string;

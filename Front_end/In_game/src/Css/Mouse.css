@@ -1,0 +1,25 @@
+.mouse-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  pointer-events: none; /* IMPORTANT: don't block clicks */
+  z-index: 9999;
+
+  transform: translate(0, 0);
+  transition: transform 0.05s linear;
+
+  font-size: 20px;
+}
+
+.cursor-name {
+  color: white;
+  text-shadow:
+    -2px -2px 0 black,
+     2px -2px 0 black,
+    -2px  2px 0 black,
+     2px  2px 0 black,
+    -2px  0px 0 black,
+     2px  0px 0 black,
+     0px -2px 0 black,
+     0px  2px 0 black;
+}

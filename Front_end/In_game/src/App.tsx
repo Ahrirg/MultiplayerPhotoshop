@@ -5,6 +5,8 @@ import {LeftBar} from './Leftbar';
 import {BottomBar} from './BottomBar';
 import {Canvas} from './Canvas';
 import {Login_overlay} from './Login';
+import { MouseLayer } from "./Components/MouseLayer";
+// import "./Css/App.css";
 
 function App() {
   const [selectedTool, setSelectedTool] = useState<string>("");
@@ -18,6 +20,11 @@ function App() {
         setUsername={setUsername}
         setSessionIp={setServerIp}
         mainServerIp={mainServerIp} // HARD CODED AUTH SERVER IP, need to be dynamic prob from the url or something when the game finished or something idk... idc... 
+      />
+
+      <MouseLayer
+        username={username}
+        sessionIp={serverIp}
       />
 
       <div className="container">
