@@ -2,11 +2,16 @@ import { WebsocketWrapper } from './websocketConnection.js';
 import { AddObject, GenerateObj, GetObjArray, Obj } from './objects.js';
 import {serverIP} from './game_loop.js'
 
-const ws = new WebsocketWrapper(
-  serverIP,
-  "canvas",
-  (event) => handleServerMessage(event)
-);
+let ws: WebsocketWrapper;
+
+export function initWebsocketWrapper()
+{
+  ws = new WebsocketWrapper(
+    serverIP,
+    "canvas",
+    (event) => handleServerMessage(event)
+  );
+}
 
 export function sendObjectModificationMessage(changes: Partial<Obj>, objectId: string)
 {
