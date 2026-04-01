@@ -245,17 +245,7 @@ def get_users(db: Session = Depends(get_database), x_api_token: str | None = Hea
 '''
 
 def start_rust_session(port: int, session_id: str):
-    rust_binary = "./target/release/Back_end_session"
-    try:
-        process = subprocess.Popen(
-            [rust_binary, str(port), session_id],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
-        return process
-    except Exception as e:
-        print(f"Failed to start Rust server: {e}")
-        return None
+    pass #some stuff
 
 #SESSION_SERVER_URL = "http://localhost:3000"
 
@@ -263,8 +253,14 @@ def start_rust_session(port: int, session_id: str):
 def create_session(x_api_token: str | None = Header(None), db: Session = Depends(get_database)):
     authenticate(x_api_token)
     session_id = f"session-{int(datetime.datetime.now().timestamp())}"
-    host = "http://localhost:3000"
-    expires = int(datetime.datetime.now().timestamp())+10
+    host = "http://localhost"
+    port = 4000 # this needs to be dynamically changed
+    expires = int(datetime.datetime.now().timestamp())+3600 # 1 hour
+
+    process = start_rust_session(port, session_id)
+    if not process:
+        raise HTTPException(status_code=500, detail="Failed to start Rust session server")
+
     try:
         db.execute(
             text("""
@@ -279,6 +275,8 @@ def create_session(x_api_token: str | None = Header(None), db: Session = Depends
         )
         db.commit()
 
+        logging.info(f"Session {session_id} created on port {port}")
+
         return {
             "session_id": session_id,
             "host": host,
@@ -286,8 +284,8 @@ def create_session(x_api_token: str | None = Header(None), db: Session = Depends
         }
 
     except Exception as e:
-        logging.exception("Session creation failed")
-        raise HTTPException(status_code=500, detail="Failed to create session")
+        logging.exception("Session storage failed")
+        raise HTTPException(status_code=500, detail="Failed to store created session")
 
 @app.get("/session/validate/{sessionId}")
 def validate_session(sessionId: str, x_api_token: str | None = Header(None), db: Session = Depends(get_database)):
