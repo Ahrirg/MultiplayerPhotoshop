@@ -7,11 +7,18 @@ use serde_json::json;
 use tower_http::cors::{CorsLayer, Any};
 mod managers;
 use std::sync::Arc;
+use clap::Parser;
+
+#[derive(Parser)]
+struct Args {
+    #[arg(long, default_value_t = 3000)]
+    port: u16,
+}
 
 #[tokio::main]
 async fn main() {
-    let port = "3000";
-    let addr = format!("0.0.0.0:{}", port);
+    let args = Args::parse();
+    let addr = format!("0.0.0.0:{}", args.port);
 
     let chat_queue = managers::messages::ChatQueue::new();
     let mouse_chat = Arc::new(managers::mousepointers::MousePointerState::new());
@@ -40,7 +47,7 @@ async fn main() {
                 .allow_headers(Any)
         );
 
-    println!("Server listening on http://localhost:{}/", port);
+    println!("Server listening on http://localhost:{}/", args.port);
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();
 }
