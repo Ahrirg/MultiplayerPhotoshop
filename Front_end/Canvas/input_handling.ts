@@ -24,19 +24,6 @@ export function initInputHandling(canvasID: string): void
         ModifyPlayerState({ mousePosX: modX });
         ModifyPlayerState({ mousePosY: modY });
     });
-
-    // TOOL TOGGLE FOR DEBUGGING
-    window.addEventListener("keydown", (e) => {
-        if (e.key === "g") {
-            console.log("G pressed");
-            if(GetPlayerState().selectedTool == ObjectType.None)
-            {
-                ModifyPlayerState({ selectedTool: ObjectType.Brush, action: PlayerAction.Idle });
-            }
-            else
-                ModifyPlayerState({ selectedTool: ObjectType.None });
-        }
-    });
 }
 
 function mousePressed()
