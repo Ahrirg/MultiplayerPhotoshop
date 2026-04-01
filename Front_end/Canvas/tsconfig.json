@@ -6,6 +6,8 @@
     "outDir": "./dist",
     "rootDir": ".",
     "jsx": "react-jsx",
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
     "erasableSyntaxOnly": false
   },
   "include": ["."],

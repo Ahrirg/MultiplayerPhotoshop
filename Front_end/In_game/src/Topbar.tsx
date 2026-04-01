@@ -1,21 +1,44 @@
+import { useState, useRef, useEffect } from 'react'
 import brushIcon from './assets/paint-brush.svg'
 import squareIcon from './assets/square.svg'
-import './topBar.css'
+import ellipseIcon from './assets/ellipse.svg'
+import triangleIcon from './assets/triangle.svg'
+import pentagonIcon from './assets/pentagon.svg'
+import starIcon from './assets/star.svg'
+import arrowIcon from './assets/up-arrow.svg'
+import { ColorPicker } from './Components/ColorPicker'
+
+import './Css/topBar.css'
 
 interface TopBarProps {
   currentTool: string;
 }
 
-// Map the tool names to their imported icons
 const toolIcons: Record<string, string> = {
   Brush: brushIcon,
   Rectangle: squareIcon,
+  Ellipse: ellipseIcon,
+  Triangle: triangleIcon,
+  Pentagon: pentagonIcon,
+  Star: starIcon,
+  Arrow: arrowIcon,
 };
 
 export function TopBar({ currentTool }: TopBarProps) {
+  const [showPicker, setShowPicker] = useState(false);
+  const [activeColor, setActiveColor] = useState('#FF0000');
+  const [hue, setHue] = useState(0);
+  const [brightness, setBrightness] = useState(50);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  const getRandomRole = () => {
+    const roles = ["Imposter", "Player"];
+    return roles[Math.floor(Math.random() * roles.length)];
+  };
+  const [currentRole, setCurrentRole] = useState<string>(() => getRandomRole());
+
   return (
     <div className="top">
-      {/* Left Corner Indicator */}
       <div className="top-tool-indicator">
         {currentTool ? (
           <>
@@ -25,6 +48,29 @@ export function TopBar({ currentTool }: TopBarProps) {
         ) : (
           <span className="no-tool">NO TOOL</span>
         )}
+      </div>
+
+      <div className="top-actions">
+        <div className="picker-wrapper">
+          <button
+            ref={buttonRef}
+            className="top-button"
+            onClick={() => setShowPicker(p => !p)}
+            style={{ borderColor: showPicker ? activeColor : 'transparent' }}>
+            <span className="top-button-swatch" style={{ background: activeColor }} />
+            <b>COLOR</b>
+        </button>
+
+          {showPicker && (
+            <ColorPicker onColorChange={setActiveColor} buttonRef={buttonRef} visible={showPicker} hue={hue} brightness={brightness} onHueChange={setHue} onBrightnessChange={setBrightness}/>
+          )}
+        </div>
+      </div>
+
+      <div className='role-indicator'>
+        <strong>
+          {currentRole}
+        </strong>
       </div>
     </div>
   );

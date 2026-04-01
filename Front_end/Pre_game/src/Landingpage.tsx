@@ -92,8 +92,30 @@ function PlayButton2({ label, onClick, iconSize = 26, fontSize = '1.6rem' }: {
 
 export default function LandingPage({ onPlay }: LandingPageProps) {
   const [visible, setVisible] = useState<boolean>(false);
+  const [currentActiveServers, setCurrentActiveServers] = useState<number>(0);
+
+  
+
+  async function getActiveServers() : Promise<number> {
+    let serverIp = window.location.href
+    if (serverIp.includes("localhost")) {
+      serverIp = "http://localhost:8000"
+    }
+
+    const response = await fetch(`${serverIp}/getallactive`)
+    if (!response.ok) {
+      return 0;
+    }
+
+    const data = await response.json();
+    const numb = Number(data);
+    setCurrentActiveServers(numb)
+
+    return numb
+  }
 
   useEffect(() => {
+    getActiveServers()
     const timeout = setTimeout(() => setVisible(true), 100);
     return () => clearTimeout(timeout);
   }, []);
@@ -110,6 +132,9 @@ export default function LandingPage({ onPlay }: LandingPageProps) {
         </h1>
         <p className="lp-tagline">Edit fast. Guess faster. Dominate even faster.</p>
         <PlayButton label="PLAY NOW" onClick={onPlay} />
+        <div className='active-servers'>
+          currently <strong className='active-servers-bold'>{currentActiveServers}</strong> servers are active
+        </div>
       </section>
 
       {/* ── ABOUT GAME ───────────────────────────── */}

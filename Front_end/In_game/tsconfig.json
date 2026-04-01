@@ -1,6 +1,8 @@
 {
   "compilerOptions": {
-    "erasableSyntaxOnly": false
+    "erasableSyntaxOnly": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false
   },
   "files": [],
   "references": [

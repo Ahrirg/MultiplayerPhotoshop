@@ -7,7 +7,7 @@ from app.models import Base
 from app.api.routes import router
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="Butyrka", version="0.1")
+    app = FastAPI(title="MultiplayerPhotoshopDB", version="0.1")
     app.include_router(router)
 
     @app.on_event("startup")

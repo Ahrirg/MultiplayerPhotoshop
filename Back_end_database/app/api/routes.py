@@ -9,7 +9,8 @@ from sqlalchemy.orm import Session
 
 from app.core.db import get_db
 from app.core.images import store_image
-from app.models import Image
+from app.models import Image, User
+from app.schemas.user import UserCreate, UserOut
 from app.schemas.image import ImageOut
 
 router = APIRouter()
@@ -26,6 +27,22 @@ def info():
     if not p.exists():
         raise HTTPException(status_code=404, detail="docs/info.md not found")
     return p.read_text(encoding="utf-8")
+
+# ---- Users ----
+@router.post("/users", response_model=UserOut)
+def create_user(payload: UserCreate, db: Session = Depends(get_db)):
+    existing = db.execute(select(User).where(User.username == payload.username)).scalar_one_or_none()
+    if existing:
+        raise HTTPException(status_code=409, detail="username already exists")
+    user = User(username=payload.username, display_name=payload.display_name)
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
+
+@router.get("/users", response_model=list[UserOut])
+def list_users(db: Session = Depends(get_db)):
+    return list(db.execute(select(User).order_by(User.id)).scalars().all())
 
 # ---- Images ----
 @router.post("/images", response_model=ImageOut)
