@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { use, useState } from "react";
 import {TopBar} from './Topbar';
 import {RightBar} from './Rightbar';
 import {LeftBar} from './Leftbar';
@@ -6,12 +6,14 @@ import {BottomBar} from './BottomBar';
 import {Canvas} from './Canvas';
 import {Login_overlay} from './Login';
 import { MouseLayer } from "./Components/MouseLayer";
+import { Waiting } from "./Waiting";
 // import "./Css/App.css";
 
 function App() {
   const [selectedTool, setSelectedTool] = useState<string>("");
   const [username, setUsername] = useState<string>("");
   const [serverIp, setServerIp] = useState<string>("");
+  const [seenPlayer, setSeenPlayer] = useState<string[]>([]);
 
   const mainServerIp = `${window.location.protocol}//${window.location.hostname}:8000`;
   return (
@@ -22,9 +24,16 @@ function App() {
         mainServerIp={mainServerIp} // HARD CODED AUTH SERVER IP, need to be dynamic prob from the url or something when the game finished or something idk... idc... 
       />
 
+      <Waiting
+        sessionIp={serverIp}
+        seenPlayers={seenPlayer}
+      />
+
       <MouseLayer
         username={username}
         sessionIp={serverIp}
+        seenPlayers={seenPlayer}
+        setSeenPlayer={setSeenPlayer}
       />
 
       <div className="container">

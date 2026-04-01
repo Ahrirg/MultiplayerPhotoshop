@@ -6,6 +6,8 @@ import {WebsocketWrapper} from "../utils/websocketConnection"
 type SessionData = {
   username: string;
   sessionIp: string;
+  seenPlayers: string[];
+  setSeenPlayer: React.Dispatch<React.SetStateAction<string[]>>;
 };
 
 type MousePointerObjs = {
@@ -14,7 +16,7 @@ type MousePointerObjs = {
   y: number;
 }
 
-export function MouseLayer({ username, sessionIp }: SessionData) {
+export function MouseLayer({ username, sessionIp, seenPlayers, setSeenPlayer }: SessionData) {
 
   const [mousePointPos, setMousePointPos] = useState<MousePointerObjs[]>([]);
   const websocketRef = useRef<WebsocketWrapper | null>(null);
@@ -44,6 +46,13 @@ export function MouseLayer({ username, sessionIp }: SessionData) {
 
     function onMsg(event: MessageEvent<any>) {
       const data: MousePointerObjs = JSON.parse(event.data);
+      setSeenPlayer(prev => {
+        const updated = prev.includes(data.name)
+          ? prev
+          : [...prev, data.name];
+
+        return updated;
+      });
 
       if (data.name === username) return;
 
