@@ -15,6 +15,8 @@ from pydantic import BaseModel
 
 from database import get_database
 
+if os.path.exists("env/.env"):
+    open("env/.env", "x")
 load_dotenv("env/.env")
 
 sessions = {}
