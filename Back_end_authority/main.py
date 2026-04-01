@@ -4,6 +4,7 @@ import logging
 import markdown
 import requests
 import datetime
+import subprocess
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from fastapi import FastAPI, HTTPException, Header, Depends
@@ -91,33 +92,55 @@ def show_server_status(db: Session = Depends(get_database)):
     status = {
         "api": "ok",
         "database": "unknown",
-        "session_server": "unknown"
+        "sessions": []
     }
 
+    # Check database connectivity
     try:
         db.execute(text("SELECT 1"))
         status["database"] = "ok"
-    except Exception as e:
+    except Exception:
         logging.exception("Database health check failed")
         status["database"] = "down"
 
-    #This needs to be for every session... so probs a for loop
+    # Fetch all sessions from the database
     try:
-        response = requests.get(f"{SESSION_SERVER_URL}/status", timeout=2)
-        if response.status_code == 200:
-            status["session_server"] = "ok"
-        else:
-            status["session_server"] = "degraded"
-    except requests.exceptions.RequestException:
-        logging.exception("Session server health check failed")
-        status["session_server"] = "down"
+        result = db.execute(text("SELECT * FROM sessions")).fetchall()
+        now_ts = datetime.datetime.now().timestamp()
+        for r in result:
+            session = dict(r._mapping)
+            session_status = {
+                "session_id": session["session_id"],
+                "host": session["host"],
+                "valid": True,
+                "host_reachable": False,
+                "reason": ""
+            }
 
-    if "down" in status.values():
+            if now_ts > session["expires_at"]:
+                session_status["valid"] = False
+                session_status["reason"] = "expired"
+
+            try:
+                resp = requests.get(session["host"], timeout=2)
+                if resp.status_code == 200:
+                    session_status["host_reachable"] = True
+                else:
+                    session_status["reason"] = f"host returned {resp.status_code}"
+            except requests.exceptions.RequestException:
+                session_status["reason"] = "host not reachable"
+
+            status["sessions"].append(session_status)
+
+    except Exception:
+        logging.exception("Failed to fetch sessions")
+        status["sessions"] = "unavailable"
+
+    overall = "ok"
+    if status["database"] == "down":
         overall = "down"
-    elif "degraded" in status.values():
+    elif any(s.get("valid") is False or s.get("host_reachable") is False for s in status["sessions"] if isinstance(status["sessions"], list)):
         overall = "degraded"
-    else:
-        overall = "ok"
 
     return {
         "status": overall,
@@ -220,6 +243,19 @@ def get_users(db: Session = Depends(get_database), x_api_token: str | None = Hea
             }
         )
 '''
+
+def start_rust_session(port: int, session_id: str):
+    rust_binary = "./target/release/Back_end_session"
+    try:
+        process = subprocess.Popen(
+            [rust_binary, str(port), session_id],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        return process
+    except Exception as e:
+        print(f"Failed to start Rust server: {e}")
+        return None
 
 #SESSION_SERVER_URL = "http://localhost:3000"
 
