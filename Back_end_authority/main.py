@@ -96,6 +96,7 @@ def show_server_status(db: Session = Depends(get_database)):
         "sessions": []
     }
 
+    # Check database connectivity
     try:
         db.execute(text("SELECT 1"))
         status["database"] = "ok"
