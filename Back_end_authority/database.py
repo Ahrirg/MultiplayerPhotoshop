@@ -1,6 +1,6 @@
 import os
 import logging
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
 from dotenv import load_dotenv
@@ -18,6 +18,16 @@ SessionLocal = sessionmaker(
     autoflush=False,
     bind=engine
 )
+
+def init_db():
+    with engine.begin() as eng:
+        eng.execute(text("""
+        CREATE TABLE IF NOT EXISTS sessions (
+            session_id TEXT PRIMARY KEY,
+            host TEXT NOT NULL,
+            expires_at INTEGER NOT NULL
+        )
+        """))
 
 def get_database():
     db = SessionLocal()

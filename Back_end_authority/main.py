@@ -13,13 +13,16 @@ from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from dotenv import load_dotenv
 from pydantic import BaseModel
 
-from database import get_database
+from database import get_database, init_db
 
-if os.path.exists("env/.env"):
+if not os.path.exists("env/.env"):
     open("env/.env", "x")
 load_dotenv("env/.env")
 
-sessions = {}
+# NOT PERMANENT to create db for session storage
+init_db()
+
+#sessions = {}
 
 class UserCreate(BaseModel):
     name: str
@@ -56,14 +59,19 @@ def authenticate(token: str | None):
     logging.info("Authentication successful")
     return True
 
-def validate(sessionId: str):
-    if sessionId not in sessions:
+def validate(sessionId: str, db: Session):
+    result = db.execute(
+        text("SELECT * FROM sessions WHERE session_id = :id"),
+        {"id": sessionId}).fetchone()
+    if not result:
         raise HTTPException(status_code=404, detail="Session not found")
     
-    if datetime.datetime.now().timestamp() > sessions[sessionId]['expired_at']:
+    session = dict(result._mapping)
+
+    if datetime.datetime.now().timestamp() > session['expires_at']:
         logging.warning("Session is expired")
         raise HTTPException(status_code=401, detail="Session is expired")
-    return True
+    return session
 
 @app.exception_handler(404)
 def not_found(request, exc):
@@ -122,24 +130,11 @@ def read_root():
     #return {"Authority server": "Hello world"}
     return FileResponse("./static/dist/game.html")
 
+#Use this for testing
 @app.get("/join/{sessionId}")
 def get_ip_from_id(sessionId: str, x_api_token: str | None = Header(None)):
     authenticate(x_api_token)
-    print("here")
-
-    '''
-    if sessionId not in sessions:
-        logging.warning(f"Join failed: Unknown session {sessionId}")
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "Server ip": "None",
-                "Session ID": sessionId,
-                "Error": "Server does not exist"
-            }
-        )
-    '''
-    
+    print("here")  
     # validate(sessionId) # disabling for testing + you still need to return if you not found 
     
     # HOST = sessions[sessionId]["host"] # THIS NOT DYNAMIC.......... :)
@@ -165,6 +160,30 @@ def get_ip_from_id(sessionId: str, x_api_token: str | None = Header(None)):
             }
         )
 
+@app.get("/join/{sessionId}")
+def get_ips_from_ids(sessionId: str, x_api_token: str | None = Header(None), db: Session = Depends(get_database)):
+    authenticate(x_api_token)
+
+    session = validate(sessionId, db)
+    HOST = session["host"]
+
+    try:
+        requests.get(HOST, timeout=2)
+        return {
+            "Server ip": HOST,
+            "Session ID": sessionId
+        }
+    except requests.exceptions.RequestException:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "Server ip": "None",
+                "Session ID": sessionId,
+                "Error": "Server is not reachable"
+            }
+        )
+
+'''
 @app.post("/test-user")
 def create_user(user: UserCreate, db: Session = Depends(get_database), x_api_token: str | None = Header(None)):
     authenticate(x_api_token)
@@ -200,33 +219,47 @@ def get_users(db: Session = Depends(get_database), x_api_token: str | None = Hea
                 "Error": f"Failed to get users at Database: {e}"
             }
         )
+'''
 
-SESSION_SERVER_URL = "http://localhost:3000"
+#SESSION_SERVER_URL = "http://localhost:3000"
 
 @app.post("/session/create") # TO DO
-def create_session(user_id: str, x_api_token: str | None = Header(None)):
+def create_session(x_api_token: str | None = Header(None), db: Session = Depends(get_database)):
     authenticate(x_api_token)
-    time = int(datetime.datetime.now().timestamp())+10
+    session_id = f"session-{int(datetime.datetime.now().timestamp())}"
+    host = "http://localhost:3000"
+    expires = int(datetime.datetime.now().timestamp())+10
     try:
-        response = requests.post(
-            f"{SESSION_SERVER_URL}/sessions",
-            json={"user_id": user_id, "expires_at": time},
-            timeout=2
+        db.execute(
+            text("""
+                INSERT INTO sessions (session_id, host, expires_at)
+                VALUES (:session_id, :host, :expires)
+            """),
+            {
+                "session_id": session_id,
+                "host": host,
+                "expires": expires
+            }
         )
-        response.raise_for_status()
-        sessions[response.json()["session_id"]] = {"host": "http://localhost:3001", "expired_at": time}
-        print(sessions["session-1"]['expired_at'])
-        return response.json()
-    except requests.exceptions.RequestException as e:
-        logging.exception("Failed to create session")
-        raise HTTPException(status_code=503, detail={"Error": "Session server unreachable", "Message": str(e)})
+        db.commit()
+
+        return {
+            "session_id": session_id,
+            "host": host,
+            "expires_at": expires
+        }
+
+    except Exception as e:
+        logging.exception("Session creation failed")
+        raise HTTPException(status_code=500, detail="Failed to create session")
 
 @app.get("/session/validate/{sessionId}")
-def validate_session(sessionId: str, x_api_token: str | None = Header(None)):
+def validate_session(sessionId: str, x_api_token: str | None = Header(None), db: Session = Depends(get_database)):
     authenticate(x_api_token)
-    validate(sessionId)
+    session = validate(sessionId, db)
+    HOST = session["host"]
     try:
-        response = requests.get(f"{SESSION_SERVER_URL}/sessions/{sessionId}", timeout=2)
+        response = requests.get(f"{HOST}/sessions/{sessionId}", timeout=2)
         response.raise_for_status()
         return response.json()
     except requests.exceptions.HTTPError as e:
@@ -237,6 +270,11 @@ def validate_session(sessionId: str, x_api_token: str | None = Header(None)):
     except requests.exceptions.RequestException as e:
         logging.exception("Session server unreachable")
         raise HTTPException(status_code=503, detail={"Error": "Session server unreachable", "Message": str(e)})
+
+@app.get("/sessions")
+def get_sessions(db: Session = Depends(get_database)):
+    result = db.execute(text("SELECT * FROM sessions")).fetchall()
+    return [dict(r._mapping) for r in result]
 
 @app.get("/info", response_class=HTMLResponse)
 def read_info():
