@@ -1,0 +1,57 @@
+
+/* Main waiting box */
+.waitingRoom {
+  background-color: #2f2f2f;
+  padding: 24px 32px;
+  border-radius: 10px;
+  width: 320px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  color: #e0e0e0;
+  text-align: center;
+}
+
+/* Title */
+.waitingRoom h2 {
+  margin-bottom: 16px;
+  font-size: 18px;
+  color: #ffffff;
+}
+
+/* Player list container */
+.PlayerList {
+  background-color: #3a3a3a;
+  border-radius: 6px;
+  padding: 12px;
+  max-height: 200px;
+  overflow-y: auto;
+  text-align: left;
+}
+
+/* Individual player */
+.PlayerList strong {
+  display: block;
+  padding: 6px 8px;
+  border-bottom: 1px solid #4a4a4a;
+  font-weight: 500;
+}
+
+/* Remove border from last item */
+.PlayerList strong:last-child {
+  border-bottom: none;
+}
+
+/* Button */
+.waitingRoom button {
+  margin-top: 16px;
+  padding: 8px 16px;
+  background-color: #555;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.waitingRoom button:hover {
+  background-color: #777;
+}
