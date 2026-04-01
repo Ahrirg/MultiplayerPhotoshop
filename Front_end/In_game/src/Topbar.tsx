@@ -7,6 +7,7 @@ import pentagonIcon from './assets/pentagon.svg'
 import starIcon from './assets/star.svg'
 import arrowIcon from './assets/up-arrow.svg'
 import { ColorPicker } from './Components/ColorPicker'
+import { ModifyPlayerState } from '../../Canvas/player_state'
 
 import './Css/topBar.css'
 
@@ -36,6 +37,27 @@ export function TopBar({ currentTool }: TopBarProps) {
     return roles[Math.floor(Math.random() * roles.length)];
   };
   const [currentRole, setCurrentRole] = useState<string>(() => getRandomRole());
+
+  useEffect(() => {
+    function hexToRGBA(hex: string) {
+      let cleaned = hex.replace('#', '');
+
+      if (cleaned.length === 3) {
+        cleaned = cleaned.split('').map(c => c + c).join('');
+      }
+
+      const bigint = parseInt(cleaned, 16);
+      const r = (bigint >> 16) & 255;
+      const g = (bigint >> 8) & 255;
+      const b = bigint & 255;
+
+      return [r, g, b, 255]; // RGBA (alpha = 255)
+    }
+
+    const arrayOf255Values = hexToRGBA(activeColor)
+    console.log(`Changed to: ${activeColor}`)
+    ModifyPlayerState({selectedColor: [arrayOf255Values[0], arrayOf255Values[1], arrayOf255Values[2], arrayOf255Values[3]]})
+  }, [activeColor])
 
   return (
     <div className="top">

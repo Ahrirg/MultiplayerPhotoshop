@@ -22,6 +22,7 @@ export function LeftBar({ activeTool, setActiveTool }: LeftBarProps) {
   const handleToolClick = (toolName: string) => {
     if (activeTool === toolName) {
       setActiveTool("");
+      ModifyPlayerState({selectedTool: ObjectType.None});
     } else {
       setActiveTool(toolName);
       if(toolName == "Brush")
