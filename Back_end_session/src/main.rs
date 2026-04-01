@@ -1,7 +1,9 @@
 use axum::{
     routing::{get, post}, 
-    Router
+    Router,
+    Json
 };
+use serde_json::json;
 use tower_http::cors::{CorsLayer, Any};
 mod managers;
 use std::sync::Arc;
@@ -17,6 +19,12 @@ async fn main() {
 
     let app = Router::new()
         .route("/", get(|| async { "Hello, World! from session rust server !!" }))
+        .route("/status", get(|| async {
+            Json(json!({
+                "up": "Server is up",
+                "status": "midgame"
+            }))
+        }))
         .route("/info", get(managers::api::read_info))
         .route("/messages/get", get(managers::messages::handle_get_messages))
         .route("/messages/send", post(managers::messages::handle_add_message))
