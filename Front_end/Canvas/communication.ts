@@ -1,10 +1,9 @@
 import { WebsocketWrapper } from './websocketConnection.js';
 import { AddObject, GenerateObj, GetObjArray, Obj } from './objects.js';
-import {serverIP} from './game_loop.js'
 
 let ws: WebsocketWrapper;
 
-export function initWebsocketWrapper()
+export function initWebsocketWrapper(serverIP: string)
 {
   ws = new WebsocketWrapper(
     serverIP,

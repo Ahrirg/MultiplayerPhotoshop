@@ -13,7 +13,7 @@ export let serverIP: string = "";
 export function initGameLoop(serverIP: string)
 {
     serverIP = serverIP;
-    initWebsocketWrapper();
+    initWebsocketWrapper(serverIP);
     let {vertices, indices} = bakeObjectsToGPUArrays(GetObjArray());
 
     // WebGL renderer initialization
