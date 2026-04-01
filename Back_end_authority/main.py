@@ -29,20 +29,11 @@ if not INTERNAL_API_TOKEN:
     logging.error("Environment variable INTERNAL_API_TOKEN is not set!")
     raise RuntimeError("INTERNAL_API_TOKEN must be set for secure authentication")
 
-# SESSION_IPS_JSON = os.getenv("SESSION_IPS")
-# if not SESSION_IPS_JSON:
-#     logging.error("Environment variable SESSION_IPS is not set!")
-#     raise RuntimeError("SESSION_IPS must be set to map session IDs to IPs")
-# try:
-#     SESSION_IPS = json.loads(SESSION_IPS_JSON)
-# except json.JSONDecodeError:
-#     raise RuntimeError("SESSION_IPS is not valid JSON")
-
 SERVICE_PORT = int(os.getenv("SERVICE_PORT", 3000))
 
 app = FastAPI()
-app.mount("/static", StaticFiles(directory="static/dist"), name="static")
-app.mount("/assets", StaticFiles(directory="static/dist/assets"), name="assets")
+#app.mount("/static", StaticFiles(directory="static/dist"), name="static")
+#app.mount("/assets", StaticFiles(directory="static/dist/assets"), name="assets")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # fix this in future
@@ -83,6 +74,46 @@ def not_found(request, exc):
 def read_root():
     #return {"Authority server": "Hello world"}
     return FileResponse("./static/dist/frontpage.html")
+
+#Health status Endpoint
+@app.get("/status")
+def show_server_status(db: Session = Depends(get_database)):
+    status = {
+        "api": "ok",
+        "database": "unknown",
+        "session_server": "unknown"
+    }
+
+    try:
+        db.execute(text("SELECT 1"))
+        status["database"] = "ok"
+    except Exception as e:
+        logging.exception("Database health check failed")
+        status["database"] = "down"
+
+    #This needs to be for every session... so probs a for loop
+    try:
+        response = requests.get(f"{SESSION_SERVER_URL}/status", timeout=2)
+        if response.status_code == 200:
+            status["session_server"] = "ok"
+        else:
+            status["session_server"] = "degraded"
+    except requests.exceptions.RequestException:
+        logging.exception("Session server health check failed")
+        status["session_server"] = "down"
+
+    if "down" in status.values():
+        overall = "down"
+    elif "degraded" in status.values():
+        overall = "degraded"
+    else:
+        overall = "ok"
+
+    return {
+        "status": overall,
+        "services": status,
+        "timestamp": datetime.datetime.utcnow().isoformat()
+    }
 
 @app.get("/game")
 def read_root():
