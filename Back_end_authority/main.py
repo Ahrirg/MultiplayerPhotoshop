@@ -5,6 +5,7 @@ import markdown
 import requests
 import datetime
 import subprocess
+import socket
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from fastapi import FastAPI, HTTPException, Header, Depends
@@ -95,7 +96,6 @@ def show_server_status(db: Session = Depends(get_database)):
         "sessions": []
     }
 
-    # Check database connectivity
     try:
         db.execute(text("SELECT 1"))
         status["database"] = "ok"
@@ -103,7 +103,6 @@ def show_server_status(db: Session = Depends(get_database)):
         logging.exception("Database health check failed")
         status["database"] = "down"
 
-    # Fetch all sessions from the database
     try:
         result = db.execute(text("SELECT * FROM sessions")).fetchall()
         now_ts = datetime.datetime.now().timestamp()
@@ -244,8 +243,25 @@ def get_users(db: Session = Depends(get_database), x_api_token: str | None = Hea
         )
 '''
 
-def start_rust_session(port: int, session_id: str):
-    pass #some stuff
+def find_free_port():
+    s = socket.socket()
+    s.bind(('', 0))
+    port = s.getsockname()[1]
+    s.close()
+    return port
+
+def start_rust_session(port: int, session_id: str): #TO DO
+    try:
+        process = subprocess.Popen(
+            ["cargo", "run", "--release", "--", "--port", str(port)],
+            cwd="/../Back_end_session/",
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        return process
+    except Exception as e:
+        logging.error(f"Failed to start Rust session server: {e}")
+        return None
 
 #SESSION_SERVER_URL = "http://localhost:3000"
 
@@ -254,22 +270,24 @@ def create_session(x_api_token: str | None = Header(None), db: Session = Depends
     authenticate(x_api_token)
     session_id = f"session-{int(datetime.datetime.now().timestamp())}"
     host = "http://localhost"
-    port = 4000 # this needs to be dynamically changed
+    port = find_free_port() # Finds a free port per session
     expires = int(datetime.datetime.now().timestamp())+3600 # 1 hour
 
     process = start_rust_session(port, session_id)
     if not process:
-        raise HTTPException(status_code=500, detail="Failed to start Rust session server")
+        pass #FOR TESTING
+        #raise HTTPException(status_code=500, detail="Failed to start Rust session server")
 
     try:
         db.execute(
             text("""
-                INSERT INTO sessions (session_id, host, expires_at)
-                VALUES (:session_id, :host, :expires)
+                INSERT INTO sessions (session_id, host, port, expires_at)
+                VALUES (:session_id, :host, :port, :expires)
             """),
             {
                 "session_id": session_id,
                 "host": host,
+                "port": port,
                 "expires": expires
             }
         )
@@ -280,6 +298,7 @@ def create_session(x_api_token: str | None = Header(None), db: Session = Depends
         return {
             "session_id": session_id,
             "host": host,
+            "port": port,
             "expires_at": expires
         }
 

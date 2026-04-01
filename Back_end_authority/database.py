@@ -25,6 +25,7 @@ def init_db():
         CREATE TABLE IF NOT EXISTS sessions (
             session_id TEXT PRIMARY KEY,
             host TEXT NOT NULL,
+            port INTEGER NOT NULL,
             expires_at INTEGER NOT NULL
         )
         """))
