@@ -324,6 +324,16 @@ def validate_session(sessionId: str, x_api_token: str | None = Header(None), db:
         logging.exception("Session server unreachable")
         raise HTTPException(status_code=503, detail={"Error": "Session server unreachable", "Message": str(e)})
 
+def get_active_sessions():
+    return [{
+        "name": "session1",
+        "status": "ingame",
+    }]
+
+@app.get("/getallactive")
+def get_all_active_server():
+    return get_active_sessions().count()
+
 @app.get("/sessions")
 def get_sessions(db: Session = Depends(get_database)):
     result = db.execute(text("SELECT * FROM sessions")).fetchall()
