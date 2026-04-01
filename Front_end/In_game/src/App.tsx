@@ -28,7 +28,7 @@ function App() {
       />
 
       <div className="container">
-        <TopBar currentTool={selectedTool} />
+        <TopBar currentTool={selectedTool} username={username} />
         
         <div className="middle">
           <LeftBar 

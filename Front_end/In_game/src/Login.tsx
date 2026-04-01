@@ -68,7 +68,9 @@ export function Login_overlay({ setUsername, setSessionIp, mainServerIp } : Logi
 
             <div className="buttons">
             <button onClick={handleJoin}>Join</button>
-            <button onClick={() => setShowModal(false)}>SKIP</button>
+            <button onClick={() => {setShowModal(false)
+                setUsername(name)
+            }}>SKIP</button>
             </div>
         </div>
         </div>
