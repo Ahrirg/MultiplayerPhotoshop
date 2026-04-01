@@ -99,10 +99,10 @@ export default function LandingPage({ onPlay }: LandingPageProps) {
   async function getActiveServers() : Promise<number> {
     let serverIp = window.location.href
     if (serverIp.includes("localhost")) {
-      serverIp = "http://localhost:8000"
+      serverIp = "http://localhost:8000/"
     }
 
-    const response = await fetch(`${serverIp}/getallactive`)
+    const response = await fetch(`${serverIp}getallactive`)
     if (!response.ok) {
       return 0;
     }

@@ -39,8 +39,8 @@ if not INTERNAL_API_TOKEN:
 SERVICE_PORT = int(os.getenv("SERVICE_PORT", 3000))
 
 app = FastAPI()
-#app.mount("/static", StaticFiles(directory="static/dist"), name="static")
-#app.mount("/assets", StaticFiles(directory="static/dist/assets"), name="assets")
+app.mount("/static", StaticFiles(directory="static/dist"), name="static")
+app.mount("/assets", StaticFiles(directory="static/dist/assets"), name="assets")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # fix this in future
@@ -327,6 +327,7 @@ def validate_session(sessionId: str, x_api_token: str | None = Header(None), db:
 
 def get_active_sessions():
     answer = get_ip_from_id("one") # temp check
+    print(answer)
     if answer:
         return [{
             "name": "session1",
