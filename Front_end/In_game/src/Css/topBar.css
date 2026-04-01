@@ -20,6 +20,12 @@
   font-style: italic;
 }
 
+.role-indicator {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
 .top-actions {
   display: flex;
   align-items: center;
