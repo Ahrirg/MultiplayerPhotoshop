@@ -25,12 +25,15 @@ ifeq ($(OS),Windows_NT)
 	del "$(OUT)\input_handling.js"
 	del "$(OUT)\player_state.js"
 	del "$(OUT)\communication.js"
+	del "$(OUT)\websocketConnection.js"
+	del "$(OUT)\communication.js"
+
 else
 # Wait, why don't I just rm -f *  ???
 	rm -f "$(OUT)\types.js" "$(OUT)\shaders.js" "$(OUT)\renderer.js" "$(OUT)\game_loop.js" "$(OUT)\input_handling.js" "$(OUT)\player_state.js"
 endif
 
 
-$(OUT)/game_loop.js: game_loop.ts objects.ts renderer.ts shaders.ts input_handling.ts player_state.ts communication.ts
+$(OUT)/game_loop.js: game_loop.ts objects.ts renderer.ts shaders.ts input_handling.ts player_state.ts communication.ts websocketConnection.tsx
 	$(MKDIR)
 	tsc

@@ -5,6 +5,7 @@
     "strict": true,
     "outDir": "./dist",
     "rootDir": ".",
+    "jsx": "react-jsx",
     "erasableSyntaxOnly": false
   },
   "include": ["."],

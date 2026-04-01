@@ -1,23 +1,41 @@
-import {Obj} from "./objects"
+import { WebsocketWrapper } from './websocketConnection.js';
+import { AddObject, GenerateObj, GetObjArray, Obj } from './objects.js';
+import {serverIP} from './game_loop.js'
 
-export enum MessageType
+const ws = new WebsocketWrapper(
+  serverIP,
+  "canvas",
+  (event) => handleServerMessage(event)
+);
+
+export function sendObjectModificationMessage(changes: Partial<Obj>, objectId: string)
 {
-    ObjectModified,
-    ObjectCreated
+  ws.sendMessage({
+    type: "modifyObject",
+    objectId: objectId,
+    changes: changes
+  }); 
 }
 
-
-export function GenerateMessage(object: Obj | null, type: MessageType)
+export function sendObjectCreationMessage(object: Obj)
 {
-    return "TO IMPLEMENT";
+  ws.sendMessage({
+    type: "createObject",
+    obj: object
+  }); 
 }
 
-export function ParseMessage(message: string)
-{
-    return "TO IMPLEMENT";
-}
-
-export function SendMessage(message: string)
-{
-    return "TO IMPLEMENT";
+export function handleServerMessage(event: MessageEvent) {
+  const message = JSON.parse(event.data);
+  
+  if (message.type === "modifyObject") {
+    const obj = GetObjArray().find(o => o.ObjID === message.objectId);
+    if (obj) {
+      Object.assign(obj, message.changes);
+    }
+  }
+  else if (message.type === "createObject")
+  {
+    AddObject(message.obj);
+  }
 }
