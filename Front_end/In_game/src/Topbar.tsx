@@ -8,11 +8,13 @@ import starIcon from './assets/star.svg'
 import arrowIcon from './assets/up-arrow.svg'
 import { ColorPicker } from './Components/ColorPicker'
 import { ModifyPlayerState } from '../../Canvas/player_state'
+import { WinScreen } from './WinScreen'
 
 import './Css/topBar.css'
 
 interface TopBarProps {
   currentTool: string;
+  username: string;
 }
 
 const toolIcons: Record<string, string> = {
@@ -25,13 +27,14 @@ const toolIcons: Record<string, string> = {
   Arrow: arrowIcon,
 };
 
-export function TopBar({ currentTool }: TopBarProps) {
+export function TopBar({ currentTool, username}: TopBarProps) {
   const [showPicker, setShowPicker] = useState(false);
   const [activeColor, setActiveColor] = useState('#FF0000');
   const [hue, setHue] = useState(0);
   const [brightness, setBrightness] = useState(50);
   const buttonRef = useRef<HTMLButtonElement>(null);
-
+  const [showWinScreen, setShowWinScreen] = useState(false); 
+ 
   const getRandomRole = () => {
     const roles = ["Imposter", "Player"];
     return roles[Math.floor(Math.random() * roles.length)];
@@ -94,6 +97,13 @@ export function TopBar({ currentTool }: TopBarProps) {
           {currentRole}
         </strong>
       </div>
+      <div className='win-screen'>
+        <button onClick={()=>{setShowWinScreen(true)}}><b>GAME END</b></button>
+      </div>
+      <WinScreen
+        showModal={showWinScreen}
+        username={username}
+      />
     </div>
   );
 }

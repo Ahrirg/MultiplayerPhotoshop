@@ -1,0 +1,74 @@
+/* Ensure the overlay covers the whole screen and darkens it */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modalWin {
+  position: relative; /* Changed from absolute to work better with flex overlay */
+  width: 700px;
+  border-radius: 30px;
+  text-align: center;
+  padding: 40px;
+  color: white;
+  text-shadow:
+    -2px -2px 0 black, 2px -2px 0 black,
+    -2px  2px 0 black, 2px  2px 0 black;
+  background: linear-gradient(270deg, red, orange, yellow, green, cyan, blue, violet);
+  background-size: 1400% 1400%;
+  animation: rainbowMove 8s ease infinite;
+  z-index: 1001;
+}
+
+/* Confetti Container */
+.confetti-container {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1002; /* Sits on top of the modal */
+}
+
+.confetti {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  top: 50%;
+  left: 50%;
+  opacity: 0;
+  animation: shootSpread 2.5s ease-out forwards;
+}
+
+/* Color Variety */
+.confetti:nth-child(5n) { background: #ff0044; }
+.confetti:nth-child(5n+1) { background: #00ffcc; }
+.confetti:nth-child(5n+2) { background: #ffff00; }
+.confetti:nth-child(5n+3) { background: #ff00ff; }
+.confetti:nth-child(5n+4) { background: #00ff00; }
+
+/* The Fixed Animation */
+@keyframes shootSpread {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg) scale(0);
+    opacity: 1;
+  }
+  30% {
+    /* Uses the --x variable passed from React */
+    transform: translate(var(--x), -40vh) rotate(360deg) scale(1.2);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(calc(var(--x) * 1.5), 100vh) rotate(720deg) scale(1);
+    opacity: 0;
+  }
+}
+
+@keyframes rainbowMove {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
