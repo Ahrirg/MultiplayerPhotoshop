@@ -270,3 +270,13 @@
   color: #333;
   border-top: 1px solid #1a1a1a;
 }
+
+.active-servers {
+  font-family: 'Bebas Neue', sans-serif;
+  margin-top: 80px;
+  font-size: 50px;
+}
+.active-servers-bold {
+  font-weight:900;
+  color: rgb(7, 255, 7);
+}
