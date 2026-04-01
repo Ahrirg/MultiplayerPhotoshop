@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import {MousePtr} from "./MousePointer";
 import "../Css/Mouse.css";
+import {WebsocketWrapper} from "../utils/websocketConnection"
 
 type SessionData = {
   username: string;
@@ -16,7 +17,8 @@ type MousePointerObjs = {
 export function MouseLayer({ username, sessionIp }: SessionData) {
 
   const [mousePointPos, setMousePointPos] = useState<MousePointerObjs[]>([]);
-  const wsRef = useRef<WebSocket | null>(null);
+  const websocketRef = useRef<WebsocketWrapper | null>(null);
+  // const WebsocketOBJ = useRef<WebsocketWrapper | null>(null);
 
   const [mouseX, setMouseX] = useState(0);
   const [mouseY, setMouseY] = useState(0);
@@ -38,37 +40,33 @@ export function MouseLayer({ username, sessionIp }: SessionData) {
   }, []);
 
   useEffect(() => {
-    if (!sessionIp) {
-      return;
-    }
-    const ws = new WebSocket(`ws://${sessionIp.replace("http://", "")}/websockets/mousepointers`);
-    wsRef.current = ws;
+    if (!sessionIp) return;
 
-    ws.onopen = () => {
-      console.log("connected to mouse websocket");
-    };
-
-    ws.onmessage = (event) => {
+    function onMsg(event: MessageEvent<any>) {
       const data: MousePointerObjs = JSON.parse(event.data);
-      // console.log(data)
-      if (data.name == username) {
-        return;
-      }
+
+      if (data.name === username) return;
+
       setMousePointPos(prev => {
         const others = prev.filter(p => p.name !== data.name);
         return [...others, data];
       });
-    };
+    }
+
+    const ws = new WebsocketWrapper(sessionIp, "mousepointers", onMsg);
+    websocketRef.current = ws;
 
     return () => {
       ws.close();
     };
-  }, [sessionIp]);
+  }, [sessionIp, username]);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      const ws = wsRef.current;
+      const websocketOBJ = websocketRef.current;
+      if (!websocketOBJ) return;
 
+      const ws = websocketOBJ.getWebsocketObject();
       if (!ws || ws.readyState !== WebSocket.OPEN) return;
 
       const payload = {
@@ -77,7 +75,7 @@ export function MouseLayer({ username, sessionIp }: SessionData) {
         y: mouseY
       };
 
-      ws.send(JSON.stringify(payload));
+      websocketOBJ.sendMessage(JSON.stringify(payload));
     }, 10);
 
     return () => clearInterval(interval);
