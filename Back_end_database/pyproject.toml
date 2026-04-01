@@ -1,5 +1,5 @@
 [project]
-name = "butirka"
+name = "MultiplayerPhotoshopDB"
 version = "0.1.0"
 description = "FastAPI backend skeleton with image hashing + file storage and SQLite metadata DB"
 readme = "README.md"
