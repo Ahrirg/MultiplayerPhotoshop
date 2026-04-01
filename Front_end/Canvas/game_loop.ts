@@ -2,14 +2,16 @@ import { compileWebGLShader, createWebGLContext, createWebGLProgram, renderWebGL
 import { vertexShaderSource, fragmentShaderSource } from "./shaders.js";
 import { bakeObjectsToGPUArrays, GetObjArray, GetUIObjArray } from "./objects.js";
 import { initInputHandling } from "./input_handling.js";
-import { GetPlayerState, HandleObjectModification, HandleUIObjects } from "./player_state.js";
+import { HandleObjectModification, HandleUIObjects } from "./player_state.js";
 
 let vertexBuffer: WebGLBuffer
 let indexBuffer: WebGLBuffer
 let glContext: WebGLRenderingContext
+export let serverIP: string = "";
 
-export function initGameLoop()
+export function initGameLoop(serverIP: string)
 {
+    serverIP = serverIP;
     let {vertices, indices} = bakeObjectsToGPUArrays(GetObjArray());
 
     // WebGL renderer initialization
@@ -33,9 +35,17 @@ export function initGameLoop()
     requestAnimationFrame(gameLoop)
 }
 
-initGameLoop();
+//initGameLoop("");
  
-
+// FOR TESTING
+// setTimeout(() => {
+//   handleServerMessage(new MessageEvent('message', {
+//     data: JSON.stringify({
+//       type: "createObject",
+//       obj: GenerateObj(0, "", ObjectType.Arrow, [-0.5,-0.5,-0.6,0.3], [0,0,0,1], 0, [0.0])
+//     })}))
+// }, 5000);
+console.log("game loop speaking. The server IP is: " + serverIP);
 // Render/game loop
 function gameLoop()
 {

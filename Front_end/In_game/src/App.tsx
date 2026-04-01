@@ -35,7 +35,7 @@ function App() {
             activeTool={selectedTool} 
             setActiveTool={setSelectedTool} 
           />
-          <Canvas />
+          <Canvas serverIP={serverIp}/>
           <RightBar 
             username={username}
             sessionIp={serverIp}

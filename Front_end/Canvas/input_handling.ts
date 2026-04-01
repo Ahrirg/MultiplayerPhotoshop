@@ -1,5 +1,5 @@
 // import {ObjectType } from "./objects.js";
-import { GenerateMessage, MessageType, SendMessage } from "./communication.js";
+import { sendObjectCreationMessage, sendObjectModificationMessage } from "./communication.js";
 import { ObjectType, CursorObjectCollision, ResetObjectBoundingBoxPoints } from "./objects.js";
 import {ModifyPlayerState, GetPlayerState, PlayerAction, GenerateTemporaryObject, CursorRotationIconCollision} from "./player_state.js";
 
@@ -84,9 +84,7 @@ function mouseReleased()
         tempObj.PivotPoint = [cx, cy];
 
         // Sending message about object creation to server
-        const creationMessage: string = GenerateMessage(tempObj, MessageType.ObjectCreated);
-        SendMessage(creationMessage);
-
+        sendObjectCreationMessage(tempObj);
 
         ModifyPlayerState({action: PlayerAction.Idle});
     }
@@ -94,5 +92,6 @@ function mouseReleased()
     {
         ModifyPlayerState({action: PlayerAction.Selecting});
         ResetObjectBoundingBoxPoints(GetPlayerState().selectedObject!);
+        sendObjectModificationMessage({Angle: GetPlayerState().selectedObject!.Angle}, GetPlayerState().selectedObject!.ObjID);
     }
 }
