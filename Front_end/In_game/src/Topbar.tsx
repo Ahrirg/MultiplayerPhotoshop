@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import brushIcon from './assets/paint-brush.svg'
 import squareIcon from './assets/square.svg'
 import ellipseIcon from './assets/ellipse.svg'
@@ -29,8 +29,13 @@ export function TopBar({ currentTool }: TopBarProps) {
   const [activeColor, setActiveColor] = useState('#FF0000');
   const [hue, setHue] = useState(0);
   const [brightness, setBrightness] = useState(50);
-  
   const buttonRef = useRef<HTMLButtonElement>(null);
+
+  const getRandomRole = () => {
+    const roles = ["Imposter", "Player"];
+    return roles[Math.floor(Math.random() * roles.length)];
+  };
+  const [currentRole, setCurrentRole] = useState<string>(() => getRandomRole());
 
   return (
     <div className="top">
@@ -60,6 +65,12 @@ export function TopBar({ currentTool }: TopBarProps) {
             <ColorPicker onColorChange={setActiveColor} buttonRef={buttonRef} visible={showPicker} hue={hue} brightness={brightness} onHueChange={setHue} onBrightnessChange={setBrightness}/>
           )}
         </div>
+      </div>
+
+      <div className='role-indicator'>
+        <strong>
+          {currentRole}
+        </strong>
       </div>
     </div>
   );
