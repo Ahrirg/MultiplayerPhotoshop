@@ -3,6 +3,7 @@ import { vertexShaderSource, fragmentShaderSource } from "./shaders.js";
 import { bakeObjectsToGPUArrays, GetObjArray, GetUIObjArray } from "./objects.js";
 import { initInputHandling } from "./input_handling.js";
 import { HandleObjectModification, HandleUIObjects } from "./player_state.js";
+import { initWebsocketWrapper } from "./communication.js";
 
 let vertexBuffer: WebGLBuffer
 let indexBuffer: WebGLBuffer
@@ -12,6 +13,7 @@ export let serverIP: string = "";
 export function initGameLoop(serverIP: string)
 {
     serverIP = serverIP;
+    initWebsocketWrapper();
     let {vertices, indices} = bakeObjectsToGPUArrays(GetObjArray());
 
     // WebGL renderer initialization
