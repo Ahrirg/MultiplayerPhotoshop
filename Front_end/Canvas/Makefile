@@ -24,16 +24,13 @@ ifeq ($(OS),Windows_NT)
 	del "$(OUT)\game_loop.js"
 	del "$(OUT)\input_handling.js"
 	del "$(OUT)\player_state.js"
+	del "$(OUT)\communication.js"
 else
 # Wait, why don't I just rm -f *  ???
-	rm -f $(OUT)/test.js $(OUT)/test.wasm "$(OUT)\types.js" "$(OUT)\shaders.js" "$(OUT)\renderer.js" "$(OUT)\game_loop.js" "$(OUT)\input_handling.js" "$(OUT)\player_state.js"
+	rm -f "$(OUT)\types.js" "$(OUT)\shaders.js" "$(OUT)\renderer.js" "$(OUT)\game_loop.js" "$(OUT)\input_handling.js" "$(OUT)\player_state.js"
 endif
 
 
-$(OUT)/game_loop.js: game_loop.ts objects.ts renderer.ts shaders.ts input_handling.ts player_state.ts
+$(OUT)/game_loop.js: game_loop.ts objects.ts renderer.ts shaders.ts input_handling.ts player_state.ts communication.ts
 	$(MKDIR)
 	tsc
-
-$(OUT)/test.js $(OUT)/test.wasm: test.c
-	$(MKDIR)
-	emcc test.c -O3 -s EXPORTED_FUNCTIONS="['_mult', '_hello']" -s EXPORTED_RUNTIME_METHODS="['ccall','cwrap','UTF8ToString','getValue','setValue','HEAP32']" -o $(OUT)/test.js

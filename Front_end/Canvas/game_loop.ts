@@ -10,7 +10,6 @@ let glContext: WebGLRenderingContext
 
 export function initGameLoop()
 {
-
     let {vertices, indices} = bakeObjectsToGPUArrays(GetObjArray());
 
     // WebGL renderer initialization
@@ -40,11 +39,6 @@ initGameLoop();
 // Render/game loop
 function gameLoop()
 {
-    // Testing stuff
-
-    /// Handling updates from server
-    // PLACEHOLDER
-
     /// Handling temporary object (object being created by user, or the selected object)
     HandleObjectModification();
     HandleUIObjects();

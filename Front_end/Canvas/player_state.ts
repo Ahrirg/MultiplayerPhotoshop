@@ -57,7 +57,7 @@ export function HandleUIObjects(): void
         const sObj = State.selectedObject!;
         // Draw wireframe
         const boundPoints = sObj.BoundingBoxPoints;
-        uiObjArray.push(GenerateObj(State.userID, -1, ObjectType.UIWireframe, 
+        uiObjArray.push(GenerateObj(State.userID, "", ObjectType.UIWireframe, 
         [boundPoints[0], boundPoints[1], boundPoints[2], boundPoints[3]], [0,0,0,1], 0, [0.005])); 
 
         // Draw rotation icon
@@ -94,7 +94,7 @@ export function GenerateRotationIcon(sObj: Obj, boundPoints: number[])
     const cy = (boundPoints[1]+boundPoints[3])/2;
     const len = Math.sqrt(Math.pow(boundPoints[0]-boundPoints[2], 2) + Math.pow(boundPoints[1]-boundPoints[3], 2))/ 2 + 0.05;
 
-    return GenerateObj(State.userID, -1, ObjectType.UIRotationIcon, 
+    return GenerateObj(State.userID, "", ObjectType.UIRotationIcon, 
     [cx + Math.cos(sObj.Angle)*len, cy + Math.sin(sObj.Angle)*len], [0,0,0,0], 0, []); 
 }
 
@@ -155,7 +155,7 @@ export function GenerateTemporaryObject(): void
 {
     State.tempObjectIsAppendable = IsObjectTypeAppendable(State.selectedTool);
     const objectID = GenerateObjectID();
-    State.tempObject = GenerateObj(GetPlayerState().userID, objectID, State.selectedTool, 
+    State.tempObject = GenerateObj(GetPlayerState().userID, "", State.selectedTool, 
             [State.mousePosX, State.mousePosY, State.mousePosX, State.mousePosY], 
             State.selectedColor, 0, [State.brushThickness]);
     AddObject(State.tempObject);

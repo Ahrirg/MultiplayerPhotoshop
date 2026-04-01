@@ -17,7 +17,7 @@ export enum ObjectType
 export interface GPUObj
 {
     UsrID: number,
-    ObjID: number,
+    ObjID: string,
     Type: ObjectType,
     Vertices: number[],
     Indices: number[],
@@ -28,7 +28,7 @@ export interface GPUObj
 export interface Obj
 {
     UsrID: number,
-    ObjID: number,
+    ObjID: string,
     Type: ObjectType,
     Points: number[],
     Color: [number, number, number, number],
@@ -39,7 +39,7 @@ export interface Obj
     ExtraArgs: number[]
 }
 
-let objectArray: Obj[] = [GenerateObj(0, 0, ObjectType.Line, [-1.0,-1.0,-1.0,-1.0], [0,0,0,0], 0, [0.0])];
+let objectArray: Obj[] = [GenerateObj(0, "", ObjectType.Line, [-1.0,-1.0,-1.0,-1.0], [0,0,0,0], 0, [0.0])];
 let uiObjArray: Obj[] = [];
 
 // Used for determining how to update temporary objects (a.k.a. whether to add cursor points to object or modify existing points)
@@ -82,6 +82,9 @@ export function AppendObjArrayFront(object: Obj)
     objectArray.unshift(object);
 }
 
+export function generateObjectId(): string {
+  return Date.now() + "-" + Math.random().toString().substring(2, 10);
+}
 
 
 export function RotateGPUObj(gpuObj: GPUObj, cx: number, cy: number, angle: number)
@@ -104,7 +107,7 @@ export function RotateGPUObj(gpuObj: GPUObj, cx: number, cy: number, angle: numb
 }
 
 // Helper function for generating objects
-export function GenerateObj(userId: number, objectId: number, type: ObjectType, points: number[],
+export function GenerateObj(userId: number, objectId: string, type: ObjectType, points: number[],
      color: [number, number, number, number], image: number, extraargs: number[]): Obj
 {
     const obj: Obj = {
@@ -119,6 +122,10 @@ export function GenerateObj(userId: number, objectId: number, type: ObjectType, 
         PivotPoint: [0, 0],
         ExtraArgs: extraargs
     }
+
+    // This part of the project is nearly done, so it would be wasteful to change so much code. 
+    // Instead, we will override the objectId parameter and give the obejct a random ID
+    obj.ObjID = generateObjectId();
 
     ResetObjectBoundingBoxPoints(obj);
     const cx = (obj.BoundingBoxPoints[0]+obj.BoundingBoxPoints[2])/2;
