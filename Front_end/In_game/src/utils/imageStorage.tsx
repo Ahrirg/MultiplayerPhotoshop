@@ -27,16 +27,18 @@ export class ImageStorage {
     constructor(
         sessionIp: string,
         userName: string,
+        newImageCallback: (Image: Image) => void
     ) {
         this.userName = userName;
         this.ipaddress = sessionIp;
         this.imageStorage = [];
         this.Websocket = new WebsocketWrapper(sessionIp, 'image', (event: MessageEvent<any>) => {
             const data: ImageData = JSON.parse(event.data);
-            console.log("Got new Image:")
-            console.log(data)
+            console.log("Got new Image:");
+            console.log(data);
             if (data.id == this.userName || this._find_image(data.image.imageId) != null) {return;}
-            this.imageStorage.push(data.image)
+            this.imageStorage.push(data.image);
+            newImageCallback(data.image);
         });
     }
 

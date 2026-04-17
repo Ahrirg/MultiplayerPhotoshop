@@ -38,7 +38,7 @@ function App() {
         onDropFile={async (file: File) => {
           console.log("Dropped:", file);
           if (!imageManager){
-            setImageManager(new ImageStorage(serverIp, username));
+            setImageManager(new ImageStorage(serverIp, username, (image) => {}));
           }
           const arrbuf = await file.arrayBuffer();
           imageManager?.uploadImage(arrbuf);
