@@ -23,6 +23,7 @@ async fn main() {
     let chat_queue = managers::messages::ChatQueue::new();
     let mouse_chat = Arc::new(managers::mousepointers::MousePointerState::new());
     let canvas_chat = Arc::new(managers::mousepointers::MousePointerState::new());
+    let image_chat = Arc::new(managers::mousepointers::MousePointerState::new());
 
     let app = Router::new()
         .route("/", get(|| async { "Hello, World! from session rust server !!" }))
@@ -40,6 +41,8 @@ async fn main() {
         .with_state(mouse_chat)
         .route("/websockets/canvas", get(managers::mousepointers::ws_handler))
         .with_state(canvas_chat)
+        .route("/websockets/image", get(managers::mousepointers::ws_handler))
+        .with_state(image_chat)
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)

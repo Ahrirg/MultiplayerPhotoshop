@@ -1,4 +1,4 @@
-import { use, useState } from "react";
+import { useState } from "react";
 import {TopBar} from './Topbar';
 import {RightBar} from './Rightbar';
 import {LeftBar} from './Leftbar';
@@ -7,6 +7,8 @@ import {Canvas} from './Canvas';
 import {Login_overlay} from './Login';
 import { MouseLayer } from "./Components/MouseLayer";
 import { Waiting } from "./Waiting";
+import { ImageDropOverlay } from "./Components/ImageDrag";
+import { ImageStorage } from "./utils/imageStorage";
 // import "./Css/App.css";
 
 function App() {
@@ -14,6 +16,7 @@ function App() {
   const [username, setUsername] = useState<string>("");
   const [serverIp, setServerIp] = useState<string>("");
   const [seenPlayer, setSeenPlayer] = useState<string[]>([]);
+  const [imageManager, setImageManager] = useState<ImageStorage | null>(null);
 
   const mainServerIp = `${window.location.protocol}//${window.location.hostname}:8000`;
   return (
@@ -27,6 +30,19 @@ function App() {
       <Waiting
         sessionIp={serverIp}
         seenPlayers={seenPlayer}
+      />
+
+      <ImageDropOverlay
+        src="./assets/dragDrop.png"
+        sessionIp={serverIp}
+        onDropFile={async (file: File) => {
+          console.log("Dropped:", file);
+          if (!imageManager){
+            setImageManager(new ImageStorage(serverIp, username));
+          }
+          const arrbuf = await file.arrayBuffer();
+          imageManager?.uploadImage(arrbuf);
+        }}
       />
 
       <MouseLayer
