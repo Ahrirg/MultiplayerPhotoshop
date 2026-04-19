@@ -1,3 +1,5 @@
+import { RotatePoints } from "./player_state";
+
 export enum ObjectType
 {
     None,
@@ -33,14 +35,17 @@ export interface Obj
     Points: number[],
     Color: [number, number, number, number],
     ImageID: number | null,
-    BoundingBoxPoints: [number, number, number, number], // (x1,y1,x2,y2)
+    Scale: number
     Angle: number, 
     PivotPoint: [number, number],
     ExtraArgs: number[]
 }
 
-let objectArray: Obj[] = [GenerateObj(0, "", ObjectType.Line, [-1.0,-1.0,-1.0,-1.0], [0,0,0,0], 0, [0.0])];
+let objectArray: Obj[] = []//[GenerateObj(0, "", ObjectType.Line, [-1.0,-1.0,-1.0,-1.0], [0,0,0,0], 0, [0.0])];
 let uiObjArray: Obj[] = [];
+export const padding = 0.00;
+export const wireframeThickness = 0.01;
+export const handleSize = 0.05;
 
 // Used for determining how to update temporary objects (a.k.a. whether to add cursor points to object or modify existing points)
 export function IsObjectTypeAppendable(objectType: ObjectType): boolean
@@ -50,7 +55,6 @@ export function IsObjectTypeAppendable(objectType: ObjectType): boolean
 
     return false;
 }
-
 
 export function SetObjArray(array: Obj[])
 {
@@ -86,7 +90,6 @@ export function generateObjectId(): string {
   return Date.now() + "-" + Math.random().toString().substring(2, 10);
 }
 
-
 export function RotateGPUObj(gpuObj: GPUObj, cx: number, cy: number, angle: number)
 {
     // for efficiency
@@ -106,6 +109,22 @@ export function RotateGPUObj(gpuObj: GPUObj, cx: number, cy: number, angle: numb
     }
 }
 
+export function RotateObj(obj: Obj)
+{
+    const angle = obj.Angle
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+
+    for (let i = 0; i < obj.Points.length; i += 2)
+    {
+        const x = obj.Points[i];
+        const y = obj.Points[i + 1];
+
+        obj.Points[i]     = x * cos - y * sin;
+        obj.Points[i + 1] = x * sin + y * cos;
+    }
+}
+
 // Helper function for generating objects
 export function GenerateObj(userId: number, objectId: string, type: ObjectType, points: number[],
      color: [number, number, number, number], image: number, extraargs: number[]): Obj
@@ -117,46 +136,115 @@ export function GenerateObj(userId: number, objectId: string, type: ObjectType, 
         Points: points,
         Color: color,
         ImageID: image,
-        BoundingBoxPoints: [0,0,0,0], 
+        Scale: 1, 
         Angle: 0, 
         PivotPoint: [0, 0],
         ExtraArgs: extraargs
     }
 
-    // This part of the project is nearly done, so it would be wasteful to change so much code. 
-    // Instead, we will override the objectId parameter and give the obejct a random ID
     obj.ObjID = generateObjectId();
 
-    ResetObjectBoundingBoxPoints(obj);
-    const cx = (obj.BoundingBoxPoints[0]+obj.BoundingBoxPoints[2])/2;
-    const cy = (obj.BoundingBoxPoints[1]+obj.BoundingBoxPoints[3])/2;
-
-    obj.PivotPoint = [cx, cy];
 
     return obj;
 }
 
-// Finds and sets correct bounding box points for an object 
-export function ResetObjectBoundingBoxPoints(object: Obj)
+export function GenerateCorrectBoundingBox(object: Obj)
 {
-    const padding = 0.02;
+    let objCopy = structuredClone(object)
+    // 1. Scale
+    ScaleObject(objCopy)
+    // 2. Rotate
+    if(objCopy.Angle != 0)
+    {
+        RotateObj(objCopy)
+    }
+    // 3. Translate
+    for(let i = 0; i < objCopy.Points.length; i+=2)
+    {
+        objCopy.Points[i] += objCopy.PivotPoint[0];
+        objCopy.Points[i+1] += objCopy.PivotPoint[1];
+    }
+    let points = objCopy.Points
 
-    const gpuObj = ConvertToGPUObj(object)!;
-    RotateGPUObj(gpuObj, 
-                object.PivotPoint[0],
-                object.PivotPoint[1],
-                object.Angle
-            )
-    const verts = gpuObj.Vertices;
 
-    let minX = verts[0];
-    let minY = verts[1];
-    let maxX = verts[0];
-    let maxY = verts[1];
+    let minX = points[0];
+    let minY = points[1];
+    let maxX = points[0];
+    let maxY = points[1];
 
-    for (let i = 6; i < verts.length; i += 6) {
-        const x = verts[i];
-        const y = verts[i + 1];
+    for (let i = 2; i < points.length; i += 2)
+    {
+        const x = points[i];
+        const y = points[i + 1];
+
+        if (x < minX) minX = x;
+        if (y < minY) minY = y;
+        if (x > maxX) maxX = x;
+        if (y > maxY) maxY = y;
+    }
+    let BoundingBox = []
+
+    BoundingBox[0] = minX - padding;
+    BoundingBox[1] = minY - padding;
+    BoundingBox[2] = maxX + padding;
+    BoundingBox[3] = maxY + padding;
+
+    return GenerateObj(-1, "", ObjectType.UIWireframe, BoundingBox, [0,0,0,1], 0, []); 
+}
+
+export function ScaleObject(object: Obj)
+{
+    const points = object.Points;
+    const scale = object.Scale;
+    for (let i = 0; i < points.length; i += 2) {
+        points[i] *= scale;
+        points[i + 1] *= scale;
+    }
+}
+
+// export function RecalculateBoundingBoxAfterRotation(object: Obj)
+// {
+//     let objCopy = structuredClone(object)
+//     RotateObj(objCopy)
+//     ScalePointsToBoundingBox(objCopy);
+//     let points = objCopy.Points
+
+//     let minX = points[0];
+//     let minY = points[1];
+//     let maxX = points[0];
+//     let maxY = points[1];
+
+//     for (let i = 2; i < points.length; i += 2)
+//     {
+//         const x = points[i];
+//         const y = points[i + 1];
+
+//         if (x < minX) minX = x;
+//         if (y < minY) minY = y;
+//         if (x > maxX) maxX = x;
+//         if (y > maxY) maxY = y;
+//     }
+
+//     object.BoundingBox[0] = minX;
+//     object.BoundingBox[1] = minY;
+//     object.BoundingBox[2] = maxX;
+//     object.BoundingBox[3] = maxY;
+// }
+
+export function CalculateObjGeometricProperties(object: Obj)
+{
+    let objCopy = structuredClone(object)
+    let points = objCopy.Points;
+
+    let minX = points[0];
+    let minY = points[1];
+    let maxX = points[0];
+    let maxY = points[1];
+
+    for (let i = 2; i < points.length; i += 2)
+    {
+        const x = points[i];
+        const y = points[i + 1];
 
         if (x < minX) minX = x;
         if (y < minY) minY = y;
@@ -164,17 +252,15 @@ export function ResetObjectBoundingBoxPoints(object: Obj)
         if (y > maxY) maxY = y;
     }
 
-    object.BoundingBoxPoints = [minX - padding, minY - padding, maxX + padding, maxY + padding];
+    object.PivotPoint[0] = (minX+maxX)/2
+    object.PivotPoint[1] = (minY+maxY)/2
+
+    for (let i = 0; i < points.length; i += 2)
+    {
+        object.Points[i] -= object.PivotPoint[0];
+        object.Points[i + 1] -= object.PivotPoint[1];
+    }
 }
-
-
-export function GenerateObjectID()
-{
-    // TO IMPLEMENT
-    return -1;
-}
-
-
 
 export function ConvertToGPUObj(object: Obj): GPUObj | null
 {
@@ -213,33 +299,54 @@ function UIWireframeToGPUObj(object: Obj): GPUObj {
     const minY = Math.min(y0, y1);
     const maxY = Math.max(y0, y1);
 
+
     function pushRect(xA: number, yA: number, xB: number, yB: number) {
-        const baseLength = vertices.length / 6;
+        const baseIndex = vertices.length / 6;
 
         vertices.push(
-            xA, yA, object.Color[0], object.Color[1], object.Color[2], object.Color[3],
-            xB, yA, object.Color[0], object.Color[1], object.Color[2], object.Color[3],
-            xB, yB, object.Color[0], object.Color[1], object.Color[2], object.Color[3],
-            xA, yB, object.Color[0], object.Color[1], object.Color[2], object.Color[3],
+            xA, yA, ...object.Color,
+            xB, yA, ...object.Color,
+            xB, yB, ...object.Color,
+            xA, yB, ...object.Color,
         );
 
         indices.push(
-            baseLength, baseLength + 1, baseLength + 2,
-            baseLength + 2, baseLength + 3, baseLength
+            baseIndex, baseIndex + 1, baseIndex + 2,
+            baseIndex + 2, baseIndex + 3, baseIndex
         );
     }
 
-    // Top edge
-    pushRect(minX, maxY - object.ExtraArgs[0], maxX, maxY);
 
-    // Bottom edge
-    pushRect(minX, minY, maxX, minY + object.ExtraArgs[0]);
+    pushRect(minX, maxY - wireframeThickness, maxX, maxY);
+    pushRect(minX, minY, maxX, minY + wireframeThickness);
+    pushRect(minX, minY, minX + wireframeThickness, maxY);
+    pushRect(maxX - wireframeThickness, minY, maxX, maxY);
 
-    // Left edge
-    pushRect(minX, minY, minX + object.ExtraArgs[0], maxY);
-
-    // Right edge
-    pushRect(maxX - object.ExtraArgs[0], minY, maxX, maxY);
+    const half = handleSize / 2;
+    pushRect(
+        minX - half,
+        minY - half,
+        minX + half,
+        minY + half
+    );
+    pushRect(
+        maxX - half,
+        minY - half,
+        maxX + half,
+        minY + half
+    );
+    pushRect(
+        minX - half,
+        maxY - half,
+        minX + half,
+        maxY + half
+    );
+    pushRect(
+        maxX - half,
+        maxY - half,
+        maxX + half,
+        maxY + half
+    );
 
     return {
         UsrID: object.UsrID,
@@ -630,17 +737,21 @@ export function bakeObjectsToGPUArrays(objectArray: Obj[]): {vertices: Float32Ar
 
     for(let i = 0; i < objectArray.length; i++)
     {
-        const object = objectArray[i];
-        let newObj = ConvertToGPUObj(object)!;
-        // rotating object
+        const object = structuredClone(objectArray[i])
+        // 1. Scale
+        ScaleObject(object)
+        // 2. Rotate
         if(object.Angle != 0)
         {
-            RotateGPUObj(newObj,
-                object.PivotPoint[0],
-                object.PivotPoint[1],
-                object.Angle
-            )
+            RotateObj(object)
         }
+        // 3. Translate
+        for(let i = 0; i < object.Points.length; i+=2)
+        {
+            object.Points[i] += object.PivotPoint[0];
+            object.Points[i+1] += object.PivotPoint[1];
+        }
+        let newObj = ConvertToGPUObj(object)!;
 
         let currentNumVertices = verticesTemporary.length / 6;
         verticesTemporary = verticesTemporary.concat(newObj.Vertices);
@@ -653,16 +764,18 @@ export function bakeObjectsToGPUArrays(objectArray: Obj[]): {vertices: Float32Ar
     return {vertices, indices};
 }
 
+
 // Finds the most recently created object which the cursor is in the bounds of
 export function CursorObjectCollision(xpos: number, ypos: number)
 {
     for(let i = objectArray.length - 1; i >= 0; i--)
     {
-
         const obj = objectArray[i];
+        let BoundingBoxPoints = GenerateCorrectBoundingBox(obj).Points
 
-        if ( xpos >= obj.BoundingBoxPoints[0] && xpos <= obj.BoundingBoxPoints[2] &&
-            ypos >= obj.BoundingBoxPoints[1] && ypos <= obj.BoundingBoxPoints[3]) 
+
+        if ( xpos >= BoundingBoxPoints[0] && xpos <= BoundingBoxPoints[2] &&
+            ypos >= BoundingBoxPoints[1] && ypos <= BoundingBoxPoints[3]) 
         {
             return obj;
         }
