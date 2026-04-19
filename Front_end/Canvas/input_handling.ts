@@ -1,16 +1,22 @@
 // import {ObjectType } from "./objects.js";
 import { sendObjectCreationMessage, sendObjectModificationMessage } from "./communication.js";
-import { ObjectType, CursorObjectCollision, ResetObjectBoundingBoxPoints } from "./objects.js";
-import {ModifyPlayerState, GetPlayerState, PlayerAction, GenerateTemporaryObject, CursorRotationIconCollision} from "./player_state.js";
+import { ObjectType, CursorObjectCollision, CalculateObjGeometricProperties } from "./objects.js";
+import {ModifyPlayerState, GetPlayerState, PlayerAction, GenerateTemporaryObject, CursorRotationIconCollision, CursorWireframeCollision, CursorScalingRectangleCollision} from "./player_state.js";
 
-// TODO: set state from "Drawing" to "Idle" if the cursor leaves the canvas
+
 
 export function initInputHandling(canvasID: string): void
 {
     const canvas = document.getElementById("glCanvas");
 
     canvas!.addEventListener("mousedown", mousePressed);
-    canvas!.addEventListener("mouseup", mouseReleased);
+    window.addEventListener("mouseup", mouseReleased);
+
+    canvas!.addEventListener("mouseleave", () => {
+        if (GetPlayerState().action !== PlayerAction.Idle) {
+            mouseReleased();
+        }
+    });
 
     canvas!.addEventListener("mousemove", (e) => {
         const rect = canvas!.getBoundingClientRect();
@@ -24,74 +30,116 @@ export function initInputHandling(canvasID: string): void
         ModifyPlayerState({ mousePosX: modX });
         ModifyPlayerState({ mousePosY: modY });
     });
+
+    window.addEventListener("keydown", (e) => {
+        if ((e.target as HTMLElement).tagName === "INPUT") return;
+
+        if (e.code === "KeyG") {
+            e.preventDefault();
+
+            const state = GetPlayerState();
+            const newTool =
+                state.selectedTool === ObjectType.Brush
+                    ? ObjectType.None
+                    : ObjectType.Brush;
+
+            ModifyPlayerState({ selectedTool: newTool });
+
+            console.log("Toggled tool:", newTool); // debug
+        }
+    });
+
 }
 
 function mousePressed()
 {
-    const currState = GetPlayerState();
+    const state = GetPlayerState();
 
-
-    if(GetPlayerState().action == PlayerAction.Idle)
+    if(state.action == PlayerAction.Idle)
     {
         // clicked on canvas with a tool -> trying to draw
-        if(GetPlayerState().selectedTool != ObjectType.None)
+        if(state.selectedTool != ObjectType.None)
         {
             GenerateTemporaryObject();
             ModifyPlayerState({action: PlayerAction.Drawing});
         }
     } 
-    else if(GetPlayerState().action == PlayerAction.Selecting)
+    else if(state.action == PlayerAction.Selecting)
     {
         // Trying to move object (OR rotate object)
-        if (GetPlayerState().selectedTool == ObjectType.None)
+        if (state.selectedTool == ObjectType.None)
         {
+            let scalingRectangleIndex = CursorScalingRectangleCollision(state.selectedObject!);
             // Check possible collision cases
-            if(CursorRotationIconCollision(GetPlayerState().mousePosX, GetPlayerState().mousePosY))
-                {
+            if(CursorRotationIconCollision())
+            {
                     ModifyPlayerState({action: PlayerAction.RotatingObject});
                     console.log("ROTATING!!!");
                     return;
-                }
+            }
+            else if(scalingRectangleIndex != -1)
+            {
+                    console.log(scalingRectangleIndex)
+                    ModifyPlayerState({action: PlayerAction.ScalingObject, howScaleBeLikeWhenWeStartYoooo: structuredClone(state.selectedObject?.Scale),  scalingRectIndex: scalingRectangleIndex, lastFrameMousePos: [state.mousePosX, state.mousePosY], lastRecordedMousePos: [state.mousePosX, state.mousePosY]});
+                    console.log("SCALING!!!");
+                    return;           
+            }
+            else if(CursorWireframeCollision(state.selectedObject!))
+            {
+                    ModifyPlayerState({action: PlayerAction.MovingObject, lastFrameMousePos: [state.mousePosX, state.mousePosY], lastRecordedMousePos: [state.mousePosX, state.mousePosY]});
+                    console.log("MOVING!!!");
+                    return;
+            }
         }
     }
 
     // clicked on canvas without a tool -> trying to select an object
-    if (GetPlayerState().selectedTool == ObjectType.None)
+    if (state.selectedTool == ObjectType.None)
     {
-
         // Call a function for collision checking, return correct object
-        const selectedObj = CursorObjectCollision(GetPlayerState().mousePosX, GetPlayerState().mousePosY);
+        const selectedObj = CursorObjectCollision(state.mousePosX, state.mousePosY);
 
         // Set currently selected object to the object we just found
         if(selectedObj != null)
+        {
             ModifyPlayerState({action: PlayerAction.Selecting, selectedObject: selectedObj});
+            console.log("SELECTING!! OR.. SUPPOSED TO SELECT :(")
+        }
         else
             ModifyPlayerState({action: PlayerAction.Idle, selectedObject: null});
 
     }
 }
 
-function mouseReleased()
+export function mouseReleased()
 {
-    if(GetPlayerState().action == PlayerAction.Drawing) // Mouse released -> was drawing, done now
+    const state = GetPlayerState()
+
+    if(state.action == PlayerAction.Drawing) // Mouse released -> was drawing, done now
     {
-        const tempObj = GetPlayerState().tempObject!;
+        const tempObj = state.tempObject!;
 
-        ResetObjectBoundingBoxPoints(tempObj);
-        const cx = (tempObj.BoundingBoxPoints[0]+tempObj.BoundingBoxPoints[2])/2;
-        const cy = (tempObj.BoundingBoxPoints[1]+tempObj.BoundingBoxPoints[3])/2;
-
-        tempObj.PivotPoint = [cx, cy];
+        CalculateObjGeometricProperties(tempObj);
 
         // Sending message about object creation to server
         sendObjectCreationMessage(tempObj);
 
-        ModifyPlayerState({action: PlayerAction.Idle});
+        ModifyPlayerState({action: PlayerAction.Idle, tempObject: null});
     }
-    if(GetPlayerState().action == PlayerAction.RotatingObject) // Mouse released -> was rotating, done now
+    else if(state.action == PlayerAction.RotatingObject)
     {
         ModifyPlayerState({action: PlayerAction.Selecting});
-        ResetObjectBoundingBoxPoints(GetPlayerState().selectedObject!);
-        sendObjectModificationMessage({Angle: GetPlayerState().selectedObject!.Angle}, GetPlayerState().selectedObject!.ObjID);
+        sendObjectModificationMessage({Angle: state.selectedObject!.Angle}, state.selectedObject!.ObjID);
     }
+    else if(state.action == PlayerAction.MovingObject)
+    {
+        ModifyPlayerState({action: PlayerAction.Selecting});
+        sendObjectModificationMessage({PivotPoint: state.selectedObject?.PivotPoint}, state.selectedObject!.ObjID);     
+    }
+    else if(state.action == PlayerAction.ScalingObject)
+    {
+        ModifyPlayerState({action: PlayerAction.Selecting});
+        sendObjectModificationMessage({Scale: state.selectedObject?.Scale}, state.selectedObject!.ObjID);     
+    }
+
 }

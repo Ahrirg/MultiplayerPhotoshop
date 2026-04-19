@@ -2,7 +2,7 @@ import { compileWebGLShader, createWebGLContext, createWebGLProgram, renderWebGL
 import { vertexShaderSource, fragmentShaderSource } from "./shaders.js";
 import { bakeObjectsToGPUArrays, GetObjArray, GetUIObjArray } from "./objects.js";
 import { initInputHandling } from "./input_handling.js";
-import { HandleObjectModification, HandleUIObjects } from "./player_state.js";
+import { GetPlayerState, HandleObjectModification, HandleUIObjects } from "./player_state.js";
 import { initWebsocketWrapper } from "./communication.js";
 
 let vertexBuffer: WebGLBuffer
@@ -36,24 +36,15 @@ export function initGameLoop(serverIP: string)
     initInputHandling('glCanvas');
     requestAnimationFrame(gameLoop)
 }
-
-//initGameLoop("");
  
-// FOR TESTING
-// setTimeout(() => {
-//   handleServerMessage(new MessageEvent('message', {
-//     data: JSON.stringify({
-//       type: "createObject",
-//       obj: GenerateObj(0, "", ObjectType.Arrow, [-0.5,-0.5,-0.6,0.3], [0,0,0,1], 0, [0.0])
-//     })}))
-// }, 5000);
-console.log("game loop speaking. The server IP is: " + serverIP);
 // Render/game loop
 function gameLoop()
 {
     /// Handling temporary object (object being created by user, or the selected object)
     HandleObjectModification();
     HandleUIObjects();
+
+    console.log(GetPlayerState().action)
 
     // Combining canvas objects with canvas UI elements
     const combinedObjectArray = [... GetObjArray(), ... GetUIObjArray()];
