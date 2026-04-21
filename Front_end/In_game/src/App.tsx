@@ -9,6 +9,7 @@ import { MouseLayer } from "./Components/MouseLayer";
 import { Waiting } from "./Waiting";
 import { ImageDropOverlay } from "./Components/ImageDrag";
 import { ImageStorage } from "./utils/imageStorage";
+import { CreateAndSendImageObject } from "../../Canvas/input_handling";
 // import "./Css/App.css";
 
 function App() {
@@ -41,7 +42,15 @@ function App() {
             setImageManager(new ImageStorage(serverIp, username, (image) => {}));
           }
           const arrbuf = await file.arrayBuffer();
-          imageManager?.uploadImage(arrbuf);
+          const bitmap = await createImageBitmap(file);
+
+          const hash = await imageManager?.uploadImage(arrbuf)!;
+
+          CreateAndSendImageObject(
+              hash,
+              bitmap.width,
+              bitmap.height
+          );
         }}
       />
 

@@ -42,7 +42,7 @@ export class ImageStorage {
         });
     }
 
-    async uploadImage(imageBinaryArrayBuffer: ArrayBuffer): Promise<void> {
+    async uploadImage(imageBinaryArrayBuffer: ArrayBuffer): Promise<string> {
         const hash = await hashArrayBuffer(imageBinaryArrayBuffer);
         
         const img: Image = {
@@ -57,6 +57,8 @@ export class ImageStorage {
             id: this.userName,
             image: img
         });
+
+        return hash;
     }
     _find_image(imageid: string): Image | null {
         this.imageStorage.forEach(element => {
