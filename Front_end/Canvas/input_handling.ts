@@ -44,8 +44,6 @@ export function initInputHandling(canvasID: string): void
                     : ObjectType.Brush;
 
             ModifyPlayerState({ selectedTool: newTool });
-
-            console.log("Toggled tool:", newTool); // debug
         }
     });
 
@@ -74,20 +72,16 @@ function mousePressed()
             if(CursorRotationIconCollision())
             {
                     ModifyPlayerState({action: PlayerAction.RotatingObject});
-                    console.log("ROTATING!!!");
                     return;
             }
             else if(scalingRectangleIndex != -1)
             {
-                    console.log(scalingRectangleIndex)
                     ModifyPlayerState({action: PlayerAction.ScalingObject, howScaleBeLikeWhenWeStartYoooo: structuredClone(state.selectedObject?.Scale),  scalingRectIndex: scalingRectangleIndex, lastFrameMousePos: [state.mousePosX, state.mousePosY], lastRecordedMousePos: [state.mousePosX, state.mousePosY]});
-                    console.log("SCALING!!!");
                     return;           
             }
             else if(CursorWireframeCollision(state.selectedObject!))
             {
                     ModifyPlayerState({action: PlayerAction.MovingObject, lastFrameMousePos: [state.mousePosX, state.mousePosY], lastRecordedMousePos: [state.mousePosX, state.mousePosY]});
-                    console.log("MOVING!!!");
                     return;
             }
         }
@@ -103,7 +97,6 @@ function mousePressed()
         if(selectedObj != null)
         {
             ModifyPlayerState({action: PlayerAction.Selecting, selectedObject: selectedObj});
-            console.log("SELECTING!! OR.. SUPPOSED TO SELECT :(")
         }
         else
             ModifyPlayerState({action: PlayerAction.Idle, selectedObject: null});

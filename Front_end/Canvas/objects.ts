@@ -90,8 +90,11 @@ export function generateObjectId(): string {
   return Date.now() + "-" + Math.random().toString().substring(2, 10);
 }
 
-export function RotateGPUObj(gpuObj: GPUObj, cx: number, cy: number, angle: number)
+export function RotateGPUObj(gpuObj: GPUObj, pivotPoint: [number, number], angle: number)
 {
+    const cx = pivotPoint[0];
+    const cy = pivotPoint[1];
+
     // for efficiency
     const cos = Math.cos(angle);
     const sin = Math.sin(angle);
@@ -150,32 +153,34 @@ export function GenerateObj(userId: number, objectId: string, type: ObjectType, 
 
 export function GenerateCorrectBoundingBox(object: Obj)
 {
-    let objCopy = structuredClone(object)
+    let tempObj = structuredClone(object);
     // 1. Scale
-    ScaleObject(objCopy)
+    ScaleObject(tempObj)
+    // 1.5. Convert to GPUObj
+    let newObj = ConvertToGPUObj(tempObj)!;
     // 2. Rotate
-    if(objCopy.Angle != 0)
+    if(tempObj.Angle != 0)
     {
-        RotateObj(objCopy)
+        RotateGPUObj(newObj, [0,0], tempObj.Angle)
     }
     // 3. Translate
-    for(let i = 0; i < objCopy.Points.length; i+=2)
+    for(let i = 0; i < newObj.Vertices.length; i+=6)
     {
-        objCopy.Points[i] += objCopy.PivotPoint[0];
-        objCopy.Points[i+1] += objCopy.PivotPoint[1];
+        newObj.Vertices[i] += object.PivotPoint[0];
+        newObj.Vertices[i+1] += object.PivotPoint[1];
     }
-    let points = objCopy.Points
+    let vertices = newObj.Vertices
 
 
-    let minX = points[0];
-    let minY = points[1];
-    let maxX = points[0];
-    let maxY = points[1];
+    let minX = vertices[0];
+    let minY = vertices[1];
+    let maxX = vertices[0];
+    let maxY = vertices[1];
 
-    for (let i = 2; i < points.length; i += 2)
+    for (let i = 6; i < vertices.length; i += 6)
     {
-        const x = points[i];
-        const y = points[i + 1];
+        const x = vertices[i];
+        const y = vertices[i + 1];
 
         if (x < minX) minX = x;
         if (y < minY) minY = y;
@@ -740,18 +745,19 @@ export function bakeObjectsToGPUArrays(objectArray: Obj[]): {vertices: Float32Ar
         const object = structuredClone(objectArray[i])
         // 1. Scale
         ScaleObject(object)
+        // 1.5. Convert to GPUObj
+        let newObj = ConvertToGPUObj(object)!;
         // 2. Rotate
         if(object.Angle != 0)
         {
-            RotateObj(object)
+            RotateGPUObj(newObj, [0,0], object.Angle)
         }
         // 3. Translate
-        for(let i = 0; i < object.Points.length; i+=2)
+        for(let i = 0; i < newObj.Vertices.length; i+=6)
         {
-            object.Points[i] += object.PivotPoint[0];
-            object.Points[i+1] += object.PivotPoint[1];
+            newObj.Vertices[i] += object.PivotPoint[0];
+            newObj.Vertices[i+1] += object.PivotPoint[1];
         }
-        let newObj = ConvertToGPUObj(object)!;
 
         let currentNumVertices = verticesTemporary.length / 6;
         verticesTemporary = verticesTemporary.concat(newObj.Vertices);
