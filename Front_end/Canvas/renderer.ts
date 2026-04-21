@@ -77,31 +77,132 @@ export function updateWebGLBuffers(gl: WebGLRenderingContext, vertexBuffer: WebG
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
 }
 
-//
-//  FUNCTION FOR SETTING UP VERTEX ATTRIBUTES
-//
-export function setupWebGLVertexLayout(gl: WebGLRenderingContext, program: WebGLProgram)
+export function useImageShader(gl: WebGLRenderingContext)
 {
-    // SIZE OF EACH VERTEX IN BYTES
-    const stride = 6 * Float32Array.BYTES_PER_ELEMENT;
-
-    // POSITION ATTRIB SETUP
-    const positionLocation = gl.getAttribLocation(program, "aPosition");
-    gl.enableVertexAttribArray(positionLocation);
-    gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, stride, 0);
-
-    // COLOR ATTRIB SETUP
-    const colorLocation = gl.getAttribLocation(program, "v_color");
-    gl.enableVertexAttribArray(colorLocation);
-    gl.vertexAttribPointer(colorLocation, 4, gl.FLOAT, false, stride, 2 * Float32Array.BYTES_PER_ELEMENT);
+    
 }
 
-//
-// DRAW CALL FUNCTION
-//
-export function renderWebGLCanvas(gl: WebGLRenderingContext, indices: Uint16Array)
+export function setupWebGLVertexLayout(
+    gl: WebGLRenderingContext,
+    program: WebGLProgram
+)
 {
-    gl.clearColor(1.0, 1.0, 1.0, 1.0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
+    const FLOAT_SIZE = Float32Array.BYTES_PER_ELEMENT;
+
+    // 9 floats per vertex:
+    // position (2) + color (4) + uv (2) + useTexture (1)
+    const stride = 9 * FLOAT_SIZE;
+
+    const positionLocation = gl.getAttribLocation(program, "a_position");
+    gl.enableVertexAttribArray(positionLocation);
+    gl.vertexAttribPointer(
+        positionLocation,
+        2,                  // vec2
+        gl.FLOAT,
+        false,
+        stride,
+        0                   // offset
+    );
+
+    const colorLocation = gl.getAttribLocation(program, "a_color");
+    gl.enableVertexAttribArray(colorLocation);
+    gl.vertexAttribPointer(
+        colorLocation,
+        4,                  // vec4
+        gl.FLOAT,
+        false,
+        stride,
+        2 * FLOAT_SIZE      // after position
+    );
+
+    const uvLocation = gl.getAttribLocation(program, "a_uv");
+    gl.enableVertexAttribArray(uvLocation);
+    gl.vertexAttribPointer(
+        uvLocation,
+        2,
+        gl.FLOAT,
+        false,
+        stride,
+        6 * FLOAT_SIZE
+    );
+
+    const useTextureLocation = gl.getAttribLocation(program, "a_useTexture");
+    gl.enableVertexAttribArray(useTextureLocation);
+    gl.vertexAttribPointer(
+        useTextureLocation,
+        1,
+        gl.FLOAT,
+        false,
+        stride,
+        8 * FLOAT_SIZE
+    );
+}
+
+export function createTextureFromBitmap(gl: WebGLRenderingContext, bitmap: ImageBitmap): WebGLTexture {
+    const texture = gl.createTexture();
+    if (!texture) {
+        throw new Error("Failed to create WebGL texture");
+    }
+
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+
+    gl.texImage2D(
+        gl.TEXTURE_2D,
+        0,
+        gl.RGBA,
+        gl.RGBA,
+        gl.UNSIGNED_BYTE,
+        bitmap
+    );
+
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+    gl.bindTexture(gl.TEXTURE_2D, null);
+
+    return texture;
+}
+
+export function loadTestTexture(gl: WebGLRenderingContext, url: string): WebGLTexture {
+    const texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texImage2D(
+        gl.TEXTURE_2D,
+        0,
+        gl.RGBA,
+        1,
+        1,
+        0,
+        gl.RGBA,
+        gl.UNSIGNED_BYTE,
+        new Uint8Array([255, 0, 255, 255]) // magenta debug pixel :3
+    );
+
+    const image = new Image();
+    image.src = url;
+
+
+    image.onload = () => {
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texImage2D(
+            gl.TEXTURE_2D,
+            0,
+            gl.RGBA,
+            gl.RGBA,
+            gl.UNSIGNED_BYTE,
+            image
+        );
+
+        gl.generateMipmap(gl.TEXTURE_2D);
+    };
+
+    return texture!;
 }

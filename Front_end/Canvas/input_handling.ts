@@ -1,6 +1,6 @@
 // import {ObjectType } from "./objects.js";
 import { sendObjectCreationMessage, sendObjectModificationMessage } from "./communication.js";
-import { ObjectType, CursorObjectCollision, CalculateObjGeometricProperties } from "./objects.js";
+import { ObjectType, CursorObjectCollision, CalculateObjGeometricProperties, GenerateObj, AddObject } from "./objects.js";
 import {ModifyPlayerState, GetPlayerState, PlayerAction, GenerateTemporaryObject, CursorRotationIconCollision, CursorWireframeCollision, CursorScalingRectangleCollision, existingIds} from "./player_state.js";
 
 
@@ -47,6 +47,29 @@ export function initInputHandling(canvasID: string): void
         }
     });
 
+}
+
+export function CreateAndSendImageObject(imageId: string, width: number, height: number): void
+{
+    let maxLength = Math.max(width, height);
+    width = width / maxLength * 0.6;
+    height = height / maxLength * 0.6;
+
+    let pivotPoint: [number, number] = [0, 0];
+    let halfWidth = width/2;
+    let halfHeight = height/2;
+
+    let corners: number[] = [
+        pivotPoint[0] - halfWidth, pivotPoint[1] - halfHeight,
+        pivotPoint[0] + halfWidth, pivotPoint[1] - halfHeight,
+        pivotPoint[0] + halfWidth, pivotPoint[1] + halfHeight,
+        pivotPoint[0] - halfWidth, pivotPoint[1] + halfHeight
+    ]
+
+    let imageObj = GenerateObj(GetPlayerState().userID, "", ObjectType.Image, corners, [1,1,1,1], imageId, []);
+    imageObj.PivotPoint = pivotPoint;
+    AddObject(imageObj);
+    sendObjectCreationMessage(imageObj);
 }
 
 function mousePressed()

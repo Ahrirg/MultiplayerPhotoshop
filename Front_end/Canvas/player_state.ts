@@ -1,4 +1,4 @@
-import {ObjectType, Obj, IsObjectTypeAppendable, GenerateObj, AddObject, SetUIObjArray, CalculateObjGeometricProperties, generateObjectId, padding, handleSize, GenerateCorrectBoundingBox} from "./objects.js"
+import {ObjectType, Obj, IsObjectTypeAppendable, GenerateObj, AddObject, SetUIObjArray, CalculateObjGeometricProperties, generateObjectId, padding, handleSize, GenerateCorrectBoundingBox, ResetObjInGPUArray} from "./objects.js"
 
 const UIboundary = 0.95
 
@@ -35,7 +35,7 @@ interface PlayerState
 let State: PlayerState =
 {
     userID: 0,
-    selectedTool: ObjectType.Pentagon, 
+    selectedTool: ObjectType.Star, 
     selectedColor: [0,0,0,1], 
     action: PlayerAction.Idle,
     mousePosX: 0,
@@ -77,7 +77,7 @@ export function HandleUIObjects(): void
         const len = Math.sqrt(Math.pow(boundPoints[0]-boundPoints[2], 2) + Math.pow(boundPoints[1]-boundPoints[3], 2))/ 2 + 0.05;
         let rotationIconObj = GenerateObj(State.userID, "", ObjectType.UIRotationIcon, 
             [Math.min(Math.max(sObj.PivotPoint[0] + Math.cos(sObj.Angle)*len, -UIboundary), UIboundary), Math.min(Math.max(sObj.PivotPoint[1] + Math.sin(sObj.Angle)*len, -UIboundary), UIboundary)],
-             [0,0,0,0], 0, []); 
+             [0,0,0,0], null, []); 
 
         uiObjArray.push(rotationIconObj);
     }
@@ -192,7 +192,7 @@ export function GenerateRotationIcon(sObj: Obj)
     const boundPoints = GenerateCorrectBoundingBox(sObj).Points
     const len = Math.sqrt(Math.pow(boundPoints[0]-boundPoints[2], 2) + Math.pow(boundPoints[1]-boundPoints[3], 2))/ 2 + 0.05;
     return GenerateObj(State.userID, "", ObjectType.UIRotationIcon, 
-    [Math.min(Math.max(sObj.PivotPoint[0] + Math.cos(sObj.Angle)*len, -UIboundary), UIboundary), Math.min(Math.max(sObj.PivotPoint[1] + Math.sin(sObj.Angle)*len, -UIboundary))], [0,0,0,0], 0, []); 
+    [Math.min(Math.max(sObj.PivotPoint[0] + Math.cos(sObj.Angle)*len, -UIboundary), UIboundary), Math.min(Math.max(sObj.PivotPoint[1] + Math.sin(sObj.Angle)*len, -UIboundary))], [0,0,0,0], null, []); 
 }
 
 export function RotatePoints(points: number[], angle: number){
@@ -235,6 +235,7 @@ export function HandleObjectModification(): void
         
         // Add (modify) points of temporary object
         UpdateTemporaryObject();
+        ResetObjInGPUArray(GetPlayerState().tempObject!.ObjID);
     }
     // If moving an object
     else if(State.action == PlayerAction.MovingObject)
@@ -274,6 +275,12 @@ export function HandleObjectModification(): void
         State.lastFrameMousePos = [State.mousePosX, State.mousePosY];
     }
 
+    if(GetPlayerState().tempObject != null)
+    {
+        ResetObjInGPUArray(GetPlayerState().tempObject!.ObjID);
+    }
+    if(GetPlayerState().selectedObject != null)
+        ResetObjInGPUArray(GetPlayerState().selectedObject!.ObjID);
 }
 
 export function FindCursorAngleRelativeToObject(): number
@@ -289,7 +296,7 @@ export function GenerateTemporaryObject(): void
     State.tempObjectIsAppendable = IsObjectTypeAppendable(State.selectedTool);
     State.tempObject = GenerateObj(GetPlayerState().userID, "", State.selectedTool, 
             [State.mousePosX, State.mousePosY, State.mousePosX, State.mousePosY], 
-            State.selectedColor, 0, [State.brushThickness]);
+            State.selectedColor, null, [State.brushThickness]);
     AddObject(State.tempObject);
 }
 
