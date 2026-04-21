@@ -53,7 +53,7 @@ function App() {
       />
 
       <div className="container">
-        <TopBar currentTool={selectedTool} username={username} />
+        <TopBar currentTool={selectedTool} username={username} imageStorage={imageManager}/>
         
         <div className="middle">
           <LeftBar 

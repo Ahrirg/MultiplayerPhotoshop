@@ -7,6 +7,7 @@ import ellipseIcon from './assets/ellipse.svg'
 import triangleIcon from './assets/triangle.svg'
 import pentagonIcon from './assets/pentagon.svg'
 import starIcon from './assets/star.svg'
+import cropIcon from './assets/crop.svg'
 import arrowIcon from './assets/up-arrow.svg'
 import { ModifyPlayerState } from '../../Canvas/player_state'
 import { ObjectType } from '../../Canvas/objects'
@@ -25,6 +26,8 @@ export function LeftBar({ activeTool, setActiveTool }: LeftBarProps) {
       ModifyPlayerState({selectedTool: ObjectType.None});
     } else {
       setActiveTool(toolName);
+      if(toolName == "Crop")
+        ModifyPlayerState({selectedTool: ObjectType.Brush});
       if(toolName == "Brush")
         ModifyPlayerState({selectedTool: ObjectType.Brush});
       if(toolName == "Rectangle")
@@ -44,6 +47,13 @@ export function LeftBar({ activeTool, setActiveTool }: LeftBarProps) {
 
   return (
     <div className="left">
+      <button 
+        className={`left-btn ${activeTool === 'Crop' ? 'active' : ''}`} 
+        onClick={() => handleToolClick('Crop')}
+        title="Crop"
+      >
+        <img src={cropIcon} alt="Crop" width="35" height="35" />
+      </button>
       <button 
         className={`left-btn ${activeTool === 'Brush' ? 'active' : ''}`} 
         onClick={() => handleToolClick('Brush')}
