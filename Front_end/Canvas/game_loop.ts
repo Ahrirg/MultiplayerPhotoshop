@@ -47,6 +47,7 @@ export function initGameLoop(serverIP: string)
 // Render/game loop
 function gameLoop()
 {
+    console.log("NUMBER OF IMAGES IN CACHE = " + imageCache.size)
     /// Handling temporary object (object being created by user, or the selected object)
     HandleObjectModification();
     HandleUIObjects();
