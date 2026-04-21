@@ -1,5 +1,6 @@
 import { WebsocketWrapper } from './websocketConnection.js';
 import { AddObject, GenerateObj, GetObjArray, Obj } from './objects.js';
+import { existingIds } from './player_state.js';
 
 let ws: WebsocketWrapper;
 
@@ -40,6 +41,9 @@ export function handleServerMessage(event: MessageEvent) {
   }
   else if (message.type === "createObject")
   {
+    if (existingIds.has(message.obj.ObjID)) return;
+
     AddObject(message.obj);
+    existingIds.add(message.obj.ObjID)
   }
 }
