@@ -50,15 +50,16 @@ export function TopBar({ currentTool, username}: TopBarProps) {
       }
 
       const bigint = parseInt(cleaned, 16);
-      const r = (bigint >> 16) & 255;
-      const g = (bigint >> 8) & 255;
-      const b = bigint & 255;
+      const r = ((bigint >> 16) & 255) / 255;
+      const g = ((bigint >> 8) & 255) / 255;
+      const b = (bigint & 255) / 255;
 
-      return [r, g, b, 255]; // RGBA (alpha = 255)
+      return [r, g, b, 1.0]; // RGBA (alpha = 1.0)
     }
 
     const arrayOf255Values = hexToRGBA(activeColor)
     console.log(`Changed to: ${activeColor}`)
+    console.log(arrayOf255Values)
     ModifyPlayerState({selectedColor: [arrayOf255Values[0], arrayOf255Values[1], arrayOf255Values[2], arrayOf255Values[3]]})
   }, [activeColor])
 

@@ -1,7 +1,7 @@
 // import {ObjectType } from "./objects.js";
 import { sendObjectCreationMessage, sendObjectModificationMessage } from "./communication.js";
 import { ObjectType, CursorObjectCollision, CalculateObjGeometricProperties } from "./objects.js";
-import {ModifyPlayerState, GetPlayerState, PlayerAction, GenerateTemporaryObject, CursorRotationIconCollision, CursorWireframeCollision, CursorScalingRectangleCollision} from "./player_state.js";
+import {ModifyPlayerState, GetPlayerState, PlayerAction, GenerateTemporaryObject, CursorRotationIconCollision, CursorWireframeCollision, CursorScalingRectangleCollision, existingIds} from "./player_state.js";
 
 
 
@@ -116,6 +116,7 @@ export function mouseReleased()
 
         // Sending message about object creation to server
         sendObjectCreationMessage(tempObj);
+        existingIds.add(tempObj.ObjID);
 
         ModifyPlayerState({action: PlayerAction.Idle, tempObject: null});
     }

@@ -50,6 +50,8 @@ let State: PlayerState =
     brushThickness: 0.01
 };
 
+export const existingIds = new Set<string>();
+
 export function ModifyPlayerState(changes: Object)
 {
     Object.assign(State, changes);
