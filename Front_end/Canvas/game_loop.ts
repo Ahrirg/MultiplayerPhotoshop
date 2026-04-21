@@ -36,7 +36,7 @@ export function initGameLoop(serverIP: string)
     initInputHandling('glCanvas');
     requestAnimationFrame(gameLoop)
 }
- 
+
 // Render/game loop
 function gameLoop()
 {
@@ -44,7 +44,7 @@ function gameLoop()
     HandleObjectModification();
     HandleUIObjects();
 
-    console.log(GetPlayerState().action)
+    console.log("DEBUG: number of objects = " + GetObjArray().length);
 
     // Combining canvas objects with canvas UI elements
     const combinedObjectArray = [... GetObjArray(), ... GetUIObjArray()];
