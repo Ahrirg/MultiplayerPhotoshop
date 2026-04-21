@@ -1,23 +1,27 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, ChangeEvent} from 'react'
 import brushIcon from './assets/paint-brush.svg'
 import squareIcon from './assets/square.svg'
 import ellipseIcon from './assets/ellipse.svg'
 import triangleIcon from './assets/triangle.svg'
 import pentagonIcon from './assets/pentagon.svg'
 import starIcon from './assets/star.svg'
+import cropIcon from './assets/crop.svg'
 import arrowIcon from './assets/up-arrow.svg'
 import { ColorPicker } from './Components/ColorPicker'
 import { ModifyPlayerState } from '../../Canvas/player_state'
 import { WinScreen } from './WinScreen'
+import { ImageStorage } from "./utils/imageStorage";
 
 import './Css/topBar.css'
 
 interface TopBarProps {
   currentTool: string;
   username: string;
+  imageStorage: ImageStorage | null;
 }
 
 const toolIcons: Record<string, string> = {
+  Crop: brushIcon,
   Brush: brushIcon,
   Rectangle: squareIcon,
   Ellipse: ellipseIcon,
@@ -27,7 +31,7 @@ const toolIcons: Record<string, string> = {
   Arrow: arrowIcon,
 };
 
-export function TopBar({ currentTool, username}: TopBarProps) {
+export function TopBar({ currentTool, username, imageStorage}: TopBarProps) {
   const [showPicker, setShowPicker] = useState(false);
   const [activeColor, setActiveColor] = useState('#FF0000');
   const [hue, setHue] = useState(0);
@@ -40,6 +44,28 @@ export function TopBar({ currentTool, username}: TopBarProps) {
     return roles[Math.floor(Math.random() * roles.length)];
   };
   const [currentRole, setCurrentRole] = useState<string>(() => getRandomRole());
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+  const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      const selectedFile = files[0];
+
+      try {
+        const buffer = await selectedFile.arrayBuffer();
+        if (!imageStorage) {
+          console.warn("ImageStorage not initialized yet");
+          return;
+        }
+       imageStorage.uploadImage(buffer);
+      } catch (error) {
+        console.error("Error reading file as ArrayBuffer:", error);
+      }
+    }
+  };
 
   useEffect(() => {
     function hexToRGBA(hex: string) {
@@ -77,6 +103,19 @@ export function TopBar({ currentTool, username}: TopBarProps) {
       </div>
 
       <div className="top-actions">
+        <input
+          type="file"
+          ref={fileInputRef}
+          style={{ display: 'none' }}
+          accept="image/*"
+          onChange={handleFileChange}
+        />
+
+        <button className="top-button" onClick={handleImportClick}>
+          <b>IMAGES</b>
+          
+        </button>
+
         <div className="picker-wrapper">
           <button
             ref={buttonRef}
