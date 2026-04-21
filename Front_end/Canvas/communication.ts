@@ -1,7 +1,7 @@
 import { WebsocketWrapper } from './websocketConnection.js';
 import { AddObject, GenerateObj, GetObjArray, imageCache, Obj, ResetObjInGPUArray } from './objects.js';
 import { existingIds } from './player_state.js';
-import { createTextureFromBitmap } from './renderer.js';
+import { createTextureFromArrayBuffer, createTextureFromBitmap } from './renderer.js';
 import { glContext } from './game_loop.js';
 
 let ws: WebsocketWrapper;
@@ -44,8 +44,13 @@ function handleImageMessage(img: { binaryData: ArrayBuffer; imageId: string }) {
 export function handleServerMessage(event: MessageEvent) {
   const message = JSON.parse(event.data);
   
-  if (message.image) {
-    handleImageMessage(message.image);
+  if (message.type === "image") {
+    const binary = Uint8Array.from(
+      atob(message.data),
+      c => c.charCodeAt(0)
+    ).buffer;
+
+    imageCache.set(message.imageId, createTextureFromArrayBuffer(glContext, binary));
     return;
   }
 

@@ -872,6 +872,11 @@ export function renderGPUObjects(
         // Bind texture if exists
         if (obj.ImageId) {
             gl.bindTexture(gl.TEXTURE_2D, imageCache.get(obj.ImageId)!);
+
+            if(!imageCache.get(obj.ImageId))
+            {
+                console.log("Could not find image in set of images. ")
+            }
         }
 
         gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
