@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import './Landingpage.css';
+import { Login_overlay } from './Login';
 
 interface SplatProps {
   top?: string;
@@ -93,6 +94,7 @@ function PlayButton2({ label, onClick, iconSize = 26, fontSize = '1.6rem' }: {
 export default function LandingPage({ onPlay }: LandingPageProps) {
   const [visible, setVisible] = useState<boolean>(false);
   const [currentActiveServers, setCurrentActiveServers] = useState<number>(0);
+  const [showOverlay, setShowOverlay] = useState<boolean>(false);
 
   
 
@@ -122,6 +124,9 @@ export default function LandingPage({ onPlay }: LandingPageProps) {
 
   return (
     <div className="lp-root">
+      {showOverlay? (<Login_overlay/>): (<></>)}
+
+
       {SPLATS.map((s, i) => <PaintSplat key={i} {...s} />)}
 
       <section className={`lp-hero ${visible ? 'lp-visible' : ''}`}>
@@ -131,7 +136,7 @@ export default function LandingPage({ onPlay }: LandingPageProps) {
           <span className="lp-title-fill">MAFIA PHOTOSHOP</span>
         </h1>
         <p className="lp-tagline">Edit fast. Guess faster. Dominate even faster.</p>
-        <PlayButton label="PLAY NOW" onClick={onPlay} />
+        <PlayButton label="PLAY NOW" onClick={() => {setShowOverlay(true)}} />
         <div className='active-servers'>
           currently <strong className='active-servers-bold'>{currentActiveServers}</strong> servers are active
         </div>
@@ -176,7 +181,7 @@ export default function LandingPage({ onPlay }: LandingPageProps) {
 
       <section className="lp-cta">
         <p className="lp-cta-sub">Ready to pick up the brush?</p>
-        <PlayButton2 label="START PLAYING" onClick={onPlay} />
+        <PlayButton2 label="START PLAYING" onClick={() => {setShowOverlay(true)}} />
       </section>
 
       <footer className="lp-footer">© 2026 SkillGapped — KTU Student Project — All rights reserved</footer>

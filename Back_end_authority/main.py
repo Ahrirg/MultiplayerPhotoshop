@@ -251,24 +251,28 @@ def find_free_port():
     s.close()
     return port
 
-def start_rust_session(port: int, session_id: str): #TO DO
+def start_rust_session(port: int, session_id: str):
     try:
         process = subprocess.Popen(
-            ["cargo", "run", "--release", "--", "--port", str(port)],
-            cwd="/../Back_end_session/",
+            ["./Back_end_session", "--port", str(port)],
+            cwd="./../Back_end_session/target/release/",
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
+            stderr=subprocess.PIPE,
+            text=True  # so output is str instead of bytes
         )
+
+        print(f"Started process PID={process.pid}")
         return process
+
     except Exception as e:
         logging.error(f"Failed to start Rust session server: {e}")
         return None
 
 #SESSION_SERVER_URL = "http://localhost:3000"
 
-@app.post("/session/create") # TO DO
+@app.post("/session/create")
 def create_session(x_api_token: str | None = Header(None), db: Session = Depends(get_database)):
-    authenticate(x_api_token)
+    # authenticate(x_api_token)
     session_id = f"session-{int(datetime.datetime.now().timestamp())}"
     host = "http://localhost"
     port = find_free_port() # Finds a free port per session
@@ -276,8 +280,8 @@ def create_session(x_api_token: str | None = Header(None), db: Session = Depends
 
     process = start_rust_session(port, session_id)
     if not process:
-        pass #FOR TESTING
-        #raise HTTPException(status_code=500, detail="Failed to start Rust session server")
+        # pass #FOR TESTING
+        raise HTTPException(status_code=500, detail="Failed to start Rust session server")
 
     try:
         db.execute(
