@@ -22,7 +22,7 @@ export const vertexShaderSource = `
 `;
 
 export const fragmentShaderSource = `
-    precision mediump float;
+    precision highp float;
 
     varying vec4 v_color;
     varying vec2 v_uv;
@@ -30,8 +30,21 @@ export const fragmentShaderSource = `
 
     uniform sampler2D u_texture;
 
+    uniform float u_contrast;     // 1.0 = normal
+    uniform float u_saturation;   // 1.0 = normal
+    uniform float u_brightness;   // 0.0 = normal
+
     void main() {
         vec4 texColor = texture2D(u_texture, v_uv);
+        texColor.rgb = (texColor.rgb - 0.5) * u_contrast + 0.5;
+        texColor.rgb += u_brightness;
+
+        float luminance = dot(texColor.rgb, vec3(0.299, 0.587, 0.114));
+        vec3 gray = vec3(luminance);
+
+        texColor.rgb = mix(gray, texColor.rgb, u_saturation);
+        texColor.rgb = clamp(texColor.rgb, 0.0, 1.0);
+
         gl_FragColor = mix(v_color, texColor, v_useTexture);
     }
 `;

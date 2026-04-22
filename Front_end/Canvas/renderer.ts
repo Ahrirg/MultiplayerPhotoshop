@@ -4,6 +4,11 @@
 //
 //
 
+export let uContrast: WebGLUniformLocation | null;
+export let uSaturation: WebGLUniformLocation | null;
+export let uBrightness: WebGLUniformLocation | null; 
+export let uTexture: WebGLUniformLocation | null;
+
 
 //
 //  FUNCTION FOR GENERATING WEBGL CONTEXT
@@ -41,6 +46,12 @@ export function createWebGLProgram(gl: WebGLRenderingContext, fragShader: WebGLS
     gl.attachShader(program, vertShader);
     gl.attachShader(program, fragShader);
     gl.linkProgram(program);
+
+    uContrast = gl.getUniformLocation(program, "u_contrast");
+    uSaturation = gl.getUniformLocation(program, "u_saturation");
+    uBrightness = gl.getUniformLocation(program, "u_brightness");
+    uTexture = gl.getUniformLocation(program, "u_texture");
+
     if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
         throw new Error(gl.getProgramInfoLog(program)!);
     }

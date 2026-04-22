@@ -1,5 +1,3 @@
-import { existingIds } from "./player_state";
-
 export enum ObjectType
 {
     None,
@@ -25,6 +23,7 @@ export interface GPUObj
     Vertices: number[],
     Indices: number[],
     ImageId: string | null
+    ExtraArgs: number[] // Currently for images only. 0 - contrast, 1 - saturation, 2 - brightness
 }
 
 // Interface for blueprints of objects, compressed version of GPUObj
@@ -390,7 +389,8 @@ function ImageToGPUObj(object: Obj): GPUObj {
     Indices: [
         0, 1, 2,
         2, 3, 0
-    ]
+    ],
+    ExtraArgs: object.ExtraArgs
     };
 
 }
@@ -459,7 +459,8 @@ function UIWireframeToGPUObj(object: Obj): GPUObj {
         Vertices: vertices,
         Indices: indices,
         Type: object.Type,
-        ImageId: null
+        ImageId: null,
+        ExtraArgs: [1,1,0]
     };
 }
 
@@ -484,7 +485,8 @@ export function UIRotationIconToGPUObj(object: Obj): GPUObj
         Vertices: vertices,
         Indices: iconIndices,
         Type: object.Type,
-        ImageId: null
+        ImageId: null,
+        ExtraArgs: [1,1,0]
     };
 }
 
@@ -521,7 +523,8 @@ function EllipseToGPUObj(object: Obj): GPUObj {
         Vertices: vertices,
         Indices: indices,
         Type: object.Type,
-        ImageId: null
+        ImageId: null,
+        ExtraArgs: [1,1,0]
     };
 
     return gpuObj;
@@ -573,7 +576,9 @@ function ArrowToGPUObj(object: Obj): GPUObj {
         Vertices: vertices,
         Indices: indices,
         Type: object.Type,
-        ImageId: null
+        ImageId: null,
+        ExtraArgs: [1,1,0]
+
     };
 
     return gpuObj;
@@ -623,7 +628,9 @@ function PentagonToGPUObj(object: Obj): GPUObj
         Vertices: vertices,
         Indices: indices,
         Type: object.Type,
-        ImageId: null
+        ImageId: null,
+        ExtraArgs: [1,1,0]
+
     };
 
     return gpuObj;
@@ -677,7 +684,9 @@ function StarToGPUObj(object: Obj): GPUObj {
         Vertices: vertices,
         Indices: indices,
         Type: object.Type,
-        ImageId: null
+        ImageId: null,
+        ExtraArgs: [1,1,0]
+
     };
 
     return gpuObj;
@@ -700,7 +709,9 @@ function TriangleToGPUObj(object: Obj): GPUObj
         Vertices: vertices,
         Indices: indices,
         Type: object.Type,
-        ImageId: null
+        ImageId: null,
+        ExtraArgs: [1,1,0]
+
     };
 
     return gpuObj;
@@ -728,7 +739,9 @@ function RectangleToGPUObj(object: Obj): GPUObj
         Vertices: vertices,
         Indices: indices,
         Type: object.Type,
-        ImageId: null
+        ImageId: null,
+        ExtraArgs: [1,1,0]
+
     }
 
     return obj;
@@ -768,7 +781,9 @@ function LineToGPUObj(object: Obj): GPUObj
         Vertices: vertices,
         Indices: indices,
         Type: object.Type,
-        ImageId: null
+        ImageId: null,
+        ExtraArgs: [1,1,0]
+
     }
 
     return obj;
@@ -831,7 +846,9 @@ function BrushToGPUObj(object: Obj): GPUObj {
         Vertices: vertices,
         Indices: indices,
         Type: object.Type,
-        ImageId: null
+        ImageId: null,
+        ExtraArgs: [1,1,0]
+
     };
 }
 
@@ -862,15 +879,21 @@ export function renderGPUObjects(
     program: WebGLProgram,
     vertexBuffer: WebGLBuffer,
     indexBuffer: WebGLBuffer,
-    gpuObjects: GPUObj[]
+    gpuObjects: GPUObj[],
+    uTexture: WebGLUniformLocation,
+    uSaturation: WebGLUniformLocation,
+    uBrightness: WebGLUniformLocation,
+    uContrast: WebGLUniformLocation,
 ) {
     gl.useProgram(program);
     gl.activeTexture(gl.TEXTURE0);
 
-    const textureLocation = gl.getUniformLocation(program, "u_texture");
-    gl.uniform1i(textureLocation, 0);
+    gl.uniform1i(uTexture, 0);
 
     for (const obj of gpuObjects) {
+        gl.uniform1f(uContrast, obj.ExtraArgs[0]);
+        gl.uniform1f(uSaturation, obj.ExtraArgs[1]);
+        gl.uniform1f(uBrightness, obj.ExtraArgs[2]);
         // Bind texture if exists
         if (obj.ImageId) {
             const texture = imageCache.get(obj.ImageId);
