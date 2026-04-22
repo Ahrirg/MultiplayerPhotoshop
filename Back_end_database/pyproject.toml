@@ -1,7 +1,7 @@
 [project]
-name = "MultiplayerPhotoshopDB"
+name = "Multiplayer Photoshop DB"
 version = "0.1.0"
-description = "FastAPI backend skeleton with image hashing + file storage and SQLite metadata DB"
+description = "FastAPI backend with image hashing + file storage and SQLite metadata DB"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
