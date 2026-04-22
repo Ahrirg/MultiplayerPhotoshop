@@ -30,6 +30,15 @@ def init_db():
         )
         """))
 
+        eng.execute(text("""
+        CREATE TABLE IF NOT EXISTS users (
+            user_id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            password_hash TEXT NOT NULL,
+            created_at INTEGER NOT NULL
+        )
+        """))
+
 def get_database():
     db = SessionLocal()
     try:
