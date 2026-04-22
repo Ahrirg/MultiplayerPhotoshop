@@ -43,23 +43,30 @@ export class ImageStorage {
     }
 
     async uploadImage(imageBinaryArrayBuffer: ArrayBuffer): Promise<string> {
-        const hash = await hashArrayBuffer(imageBinaryArrayBuffer);
-        
-        const base64 = btoa(
-        String.fromCharCode(...new Uint8Array(imageBinaryArrayBuffer))
-        );
+        function arrayBufferToBase64(buffer: ArrayBuffer): string {
+            const bytes = new Uint8Array(buffer);
+            let binary = "";
+            const chunkSize = 0x8000;
 
-        console.log("Sending image:");
-        console.log(base64);
+            for (let i = 0; i < bytes.length; i += chunkSize) {
+                binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+            }
+
+            return btoa(binary);
+        }
+
+        const hash = await hashArrayBuffer(imageBinaryArrayBuffer);
+
+        const base64 = arrayBufferToBase64(imageBinaryArrayBuffer);
 
         this.Websocket.sendMessage({
-        type: "image",
-        id: this.userName,
-        imageId: hash,
-        data: base64
+            type: "image",
+            id: this.userName,
+            imageId: hash,
+            data: base64
         });
 
-        return hash;
+    return hash;
     }
     _find_image(imageid: string): Image | null {
         this.imageStorage.forEach(element => {

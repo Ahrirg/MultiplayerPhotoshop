@@ -1,3 +1,5 @@
+import { existingIds } from "./player_state";
+
 export enum ObjectType
 {
     None,
@@ -43,7 +45,7 @@ export interface Obj
 let objectArray: Obj[] = []//[GenerateObj(0, "", ObjectType.Line, [-1.0,-1.0,-1.0,-1.0], [0,0,0,0], 0, [0.0])];
 let uiObjArray: Obj[] = [];
 let gpuObjArray: GPUObj[] = [];
-export const imageCache = new Map<string, WebGLTexture>();
+export const imageCache = new Map<string, WebGLTexture | null>();
 export const padding = 0.00;
 export const wireframeThickness = 0.01;
 export const handleSize = 0.05;
@@ -871,11 +873,15 @@ export function renderGPUObjects(
     for (const obj of gpuObjects) {
         // Bind texture if exists
         if (obj.ImageId) {
-            gl.bindTexture(gl.TEXTURE_2D, imageCache.get(obj.ImageId)!);
+            const texture = imageCache.get(obj.ImageId);
 
-            if(!imageCache.get(obj.ImageId))
+            if(texture)
             {
-                console.log("Could not find image in set of images. ")
+                gl.bindTexture(gl.TEXTURE_2D, texture!);
+            }
+            else
+            {
+                console.log("Could not find image in set of images (OR its falsy).")
             }
         }
 

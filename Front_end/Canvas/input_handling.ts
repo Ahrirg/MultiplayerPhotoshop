@@ -69,6 +69,7 @@ export function CreateAndSendImageObject(imageId: string, width: number, height:
     let imageObj = GenerateObj(GetPlayerState().userID, "", ObjectType.Image, corners, [1,1,1,1], imageId, []);
     imageObj.PivotPoint = pivotPoint;
     AddObject(imageObj);
+    existingIds.add(imageObj.ObjID)
     sendObjectCreationMessage(imageObj);
 }
 

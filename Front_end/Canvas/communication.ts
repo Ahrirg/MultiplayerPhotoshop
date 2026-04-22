@@ -50,7 +50,17 @@ export function handleServerMessage(event: MessageEvent) {
       c => c.charCodeAt(0)
     ).buffer;
 
-    imageCache.set(message.imageId, createTextureFromArrayBuffer(glContext, binary));
+    imageCache.set(message.imageId, null);
+
+    createTextureFromArrayBuffer(glContext, binary)
+      .then(texture => {
+        imageCache.set(message.imageId, texture);
+        console.log("Image texture ready:", message.imageId);
+      })
+      .catch(err => {
+        console.error("Failed to create texture:", message.imageId, err);
+      });
+
     return;
   }
 
@@ -64,8 +74,7 @@ export function handleServerMessage(event: MessageEvent) {
   else if (message.type === "createObject")
   {
     if (existingIds.has(message.obj.ObjID)) return;
-
-    AddObject(message.obj);
     existingIds.add(message.obj.ObjID)
+    AddObject(message.obj);
   }
 }

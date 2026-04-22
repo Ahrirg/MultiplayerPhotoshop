@@ -22,11 +22,14 @@ export class WebsocketWrapper {
     sendMessage(data: string): void;
     sendMessage(data: Record<string, unknown>): void;
     sendMessage(data: unknown): void {
-        if (typeof data === "string") {
-            this.websocketObject.send(data);
-        } else {
-            this.websocketObject.send(JSON.stringify(data));
+        if (this.websocketObject.readyState !== WebSocket.OPEN) {
+            console.warn("WebSocket not ready yet, dropping message");
+            return;
         }
+
+        this.websocketObject.send(
+            typeof data === "string" ? data : JSON.stringify(data)
+        );
     }
 
     getWebsocketObject() {
