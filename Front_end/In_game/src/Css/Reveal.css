@@ -4,7 +4,7 @@
   inset: 0;
   background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px); /* safari */
+  -webkit-backdrop-filter: blur(10px);
 
   display: flex;
   align-items: center;
@@ -15,7 +15,6 @@
 
 /* Floating modal */
 .rr-modal {
-  /* ✨ visible background (not too transparent) */
   background: linear-gradient(160deg, #1a1a1a, #101010);
   
   border-radius: 18px;
@@ -23,7 +22,6 @@
   width: 90%;
   max-width: 420px;
 
-  /* ✅ perfect centering */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -32,7 +30,6 @@
 
   gap: 14px;
 
-  /* ✨ floating feel */
   box-shadow:
     0 25px 70px rgba(0, 0, 0, 0.8),
     0 0 30px rgba(255, 255, 255, 0.05);
@@ -84,7 +81,7 @@
 }
 
 .rr-description {
-  max-width: 300px;   /* prevents awkward wide text */
+  max-width: 300px;  
   text-align: center;
   font-size: 1rem;
   color: #ddd;
@@ -114,7 +111,6 @@
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
 }
 
-/* hover glow uses role color */
 .rr-confirm-btn:hover {
   transform:  scale(1.01);
 
