@@ -1,5 +1,3 @@
-import { RotatePoints } from "./player_state";
-
 export enum ObjectType
 {
     None,
@@ -12,7 +10,8 @@ export enum ObjectType
     Star, 
     Triangle, 
     Pentagon, 
-    Arrow
+    Arrow,
+    Image
 }
 
 // Interface for objects which are ready for the GPU to render
@@ -23,7 +22,7 @@ export interface GPUObj
     Type: ObjectType,
     Vertices: number[],
     Indices: number[],
-    Image: WebGLTexture | null
+    ImageId: string | null
 }
 
 // Interface for blueprints of objects, compressed version of GPUObj
@@ -34,7 +33,7 @@ export interface Obj
     Type: ObjectType,
     Points: number[],
     Color: [number, number, number, number],
-    ImageID: number | null,
+    ImageId: string | null,
     Scale: number
     Angle: number, 
     PivotPoint: [number, number],
@@ -43,9 +42,30 @@ export interface Obj
 
 let objectArray: Obj[] = []//[GenerateObj(0, "", ObjectType.Line, [-1.0,-1.0,-1.0,-1.0], [0,0,0,0], 0, [0.0])];
 let uiObjArray: Obj[] = [];
+let gpuObjArray: GPUObj[] = [];
+export const imageCache = new Map<string, WebGLTexture>();
 export const padding = 0.00;
 export const wireframeThickness = 0.01;
 export const handleSize = 0.05;
+const VERTEX_STRIDE = 9;
+
+function pushVertex(
+    vertices: number[],
+    x: number,
+    y: number,
+    color: number[],
+    u = 0,
+    v = 0,
+    useTexture = 0
+) {
+    vertices.push(
+        x, y,
+        color[0], color[1], color[2], color[3],
+        u, v,
+        useTexture
+    );
+}
+
 
 // Used for determining how to update temporary objects (a.k.a. whether to add cursor points to object or modify existing points)
 export function IsObjectTypeAppendable(objectType: ObjectType): boolean
@@ -71,6 +91,11 @@ export function GetUIObjArray(): Obj[]
     return uiObjArray;
 }
 
+export function GetGPUArray(): GPUObj[]
+{
+    return gpuObjArray;
+}
+
 export function SetUIObjArray(array: Obj[])
 {
     uiObjArray = array;
@@ -79,11 +104,91 @@ export function SetUIObjArray(array: Obj[])
 export function AddObject(object: Obj)
 {
     objectArray.push(object);
+    AddObjToGPUArray(object);
 }
 
 export function AppendObjArrayFront(object: Obj)
 {
     objectArray.unshift(object);
+}
+
+export function AddObjToGPUArray(object: Obj)
+{
+    const objCopy = structuredClone(object);
+    // 1. Scale
+    ScaleObject(objCopy);
+    // 1.5. Convert to GPUObj
+    let newObj = ConvertToGPUObj(objCopy)!;
+    // 2. Rotate
+    if(objCopy.Angle != 0)
+    {
+        RotateGPUObj(newObj, [0,0], objCopy.Angle);
+    }
+    // 3. Translate
+    for(let i = 0; i < newObj.Vertices.length; i+=VERTEX_STRIDE)
+    {
+        newObj.Vertices[i] += objCopy.PivotPoint[0];
+        newObj.Vertices[i+1] += objCopy.PivotPoint[1];
+    }
+
+    gpuObjArray.push(newObj);
+}
+
+export function ObjToGPUObjArray(array: Obj[]): GPUObj[]
+{
+    let gpuArr: GPUObj[] = []
+    for(let i = 0; i < array.length; i++)
+    {
+        const objCopy = structuredClone(array[i]);
+        // 1. Scale
+        ScaleObject(objCopy);
+        // 1.5. Convert to GPUObj
+        let newObj = ConvertToGPUObj(objCopy)!;
+        // 2. Rotate
+        if(objCopy.Angle != 0)
+        {
+            RotateGPUObj(newObj, [0,0], objCopy.Angle);
+        }
+        // 3. Translate
+        for(let i = 0; i < newObj.Vertices.length; i+=VERTEX_STRIDE)
+        {
+            newObj.Vertices[i] += objCopy.PivotPoint[0];
+            newObj.Vertices[i+1] += objCopy.PivotPoint[1];
+        }
+        gpuArr.push(newObj);
+    }
+    return gpuArr;
+}
+
+// Assumes the object has already been modified in ObjArray
+export function ResetObjInGPUArray(ID: string)
+{    
+    const objIndex = objectArray.findIndex(obj => obj.ObjID === ID);
+
+    const objCopy = structuredClone(objectArray[objIndex]);
+    // 1. Scale
+    ScaleObject(objCopy);
+    // 1.5. Convert to GPUObj
+    let newObj = ConvertToGPUObj(objCopy)!;
+    // 2. Rotate
+    if(objCopy.Angle != 0)
+    {
+        RotateGPUObj(newObj, [0,0], objCopy.Angle);
+    }
+    // 3. Translate
+    for(let i = 0; i < newObj.Vertices.length; i+=VERTEX_STRIDE)
+    {
+        newObj.Vertices[i] += objCopy.PivotPoint[0];
+        newObj.Vertices[i+1] += objCopy.PivotPoint[1];
+    }
+
+    // 4. Reset object in GPU array
+    const gpuIndex = gpuObjArray.findIndex(obj => obj.ObjID === ID);
+
+    if (gpuIndex !== -1) {
+        gpuObjArray[gpuIndex] = newObj;
+    }
+
 }
 
 export function generateObjectId(): string {
@@ -99,7 +204,7 @@ export function RotateGPUObj(gpuObj: GPUObj, pivotPoint: [number, number], angle
     const cos = Math.cos(angle);
     const sin = Math.sin(angle);
 
-    for (let i = 0; i < gpuObj.Vertices.length; i += 6)
+    for (let i = 0; i < gpuObj.Vertices.length; i += VERTEX_STRIDE)
     {
         const x = gpuObj.Vertices[i];
         const y = gpuObj.Vertices[i + 1];
@@ -130,7 +235,7 @@ export function RotateObj(obj: Obj)
 
 // Helper function for generating objects
 export function GenerateObj(userId: number, objectId: string, type: ObjectType, points: number[],
-     color: [number, number, number, number], image: number, extraargs: number[]): Obj
+     color: [number, number, number, number], imageId: string | null, extraargs: number[]): Obj
 {
     const obj: Obj = {
         UsrID: userId,
@@ -138,7 +243,7 @@ export function GenerateObj(userId: number, objectId: string, type: ObjectType, 
         Type: type,
         Points: points,
         Color: color,
-        ImageID: image,
+        ImageId: imageId,
         Scale: 1, 
         Angle: 0, 
         PivotPoint: [0, 0],
@@ -164,7 +269,7 @@ export function GenerateCorrectBoundingBox(object: Obj)
         RotateGPUObj(newObj, [0,0], tempObj.Angle)
     }
     // 3. Translate
-    for(let i = 0; i < newObj.Vertices.length; i+=6)
+    for(let i = 0; i < newObj.Vertices.length; i+=VERTEX_STRIDE)
     {
         newObj.Vertices[i] += object.PivotPoint[0];
         newObj.Vertices[i+1] += object.PivotPoint[1];
@@ -177,7 +282,7 @@ export function GenerateCorrectBoundingBox(object: Obj)
     let maxX = vertices[0];
     let maxY = vertices[1];
 
-    for (let i = 6; i < vertices.length; i += 6)
+    for (let i = VERTEX_STRIDE; i < vertices.length; i += VERTEX_STRIDE)
     {
         const x = vertices[i];
         const y = vertices[i + 1];
@@ -194,7 +299,7 @@ export function GenerateCorrectBoundingBox(object: Obj)
     BoundingBox[2] = maxX + padding;
     BoundingBox[3] = maxY + padding;
 
-    return GenerateObj(-1, "", ObjectType.UIWireframe, BoundingBox, [0,0,0,1], 0, []); 
+    return GenerateObj(-1, "", ObjectType.UIWireframe, BoundingBox, [0,0,0,1], null, []); 
 }
 
 export function ScaleObject(object: Obj)
@@ -206,35 +311,6 @@ export function ScaleObject(object: Obj)
         points[i + 1] *= scale;
     }
 }
-
-// export function RecalculateBoundingBoxAfterRotation(object: Obj)
-// {
-//     let objCopy = structuredClone(object)
-//     RotateObj(objCopy)
-//     ScalePointsToBoundingBox(objCopy);
-//     let points = objCopy.Points
-
-//     let minX = points[0];
-//     let minY = points[1];
-//     let maxX = points[0];
-//     let maxY = points[1];
-
-//     for (let i = 2; i < points.length; i += 2)
-//     {
-//         const x = points[i];
-//         const y = points[i + 1];
-
-//         if (x < minX) minX = x;
-//         if (y < minY) minY = y;
-//         if (x > maxX) maxX = x;
-//         if (y > maxY) maxY = y;
-//     }
-
-//     object.BoundingBox[0] = minX;
-//     object.BoundingBox[1] = minY;
-//     object.BoundingBox[2] = maxX;
-//     object.BoundingBox[3] = maxY;
-// }
 
 export function CalculateObjGeometricProperties(object: Obj)
 {
@@ -289,8 +365,32 @@ export function ConvertToGPUObj(object: Obj): GPUObj | null
         return UIWireframeToGPUObj(object);
     if(object.Type == ObjectType.UIRotationIcon)
         return UIRotationIconToGPUObj(object);
+    if(object.Type == ObjectType.Image)
+        return ImageToGPUObj(object);
 
     return null;
+}
+
+function ImageToGPUObj(object: Obj): GPUObj {
+    let vertices: number[] = []
+
+    pushVertex(vertices, object.Points[0], object.Points[1], [1,1,1,1], 0, 0, 1);
+    pushVertex(vertices, object.Points[2], object.Points[3], [1,1,1,1], 1, 0, 1);
+    pushVertex(vertices, object.Points[4], object.Points[5], [1,1,1,1], 1, 1, 1);
+    pushVertex(vertices, object.Points[6], object.Points[7], [1,1,1,1], 0, 1, 1);
+
+    return {
+    UsrID: object.UsrID,
+    ObjID: object.ObjID,
+    Type: ObjectType.Image,
+    ImageId: object.ImageId,
+    Vertices: vertices,
+    Indices: [
+        0, 1, 2,
+        2, 3, 0
+    ]
+    };
+
 }
 
 function UIWireframeToGPUObj(object: Obj): GPUObj {
@@ -306,14 +406,12 @@ function UIWireframeToGPUObj(object: Obj): GPUObj {
 
 
     function pushRect(xA: number, yA: number, xB: number, yB: number) {
-        const baseIndex = vertices.length / 6;
+        const baseIndex = vertices.length / VERTEX_STRIDE;
 
-        vertices.push(
-            xA, yA, ...object.Color,
-            xB, yA, ...object.Color,
-            xB, yB, ...object.Color,
-            xA, yB, ...object.Color,
-        );
+        pushVertex(vertices, xA, yA, object.Color);
+        pushVertex(vertices, xB, yA, object.Color);
+        pushVertex(vertices, xB, yB, object.Color);
+        pushVertex(vertices, xA, yB, object.Color);
 
         indices.push(
             baseIndex, baseIndex + 1, baseIndex + 2,
@@ -359,29 +457,32 @@ function UIWireframeToGPUObj(object: Obj): GPUObj {
         Vertices: vertices,
         Indices: indices,
         Type: object.Type,
-        Image: null
+        ImageId: null
     };
 }
 
 export function UIRotationIconToGPUObj(object: Obj): GPUObj
 {
     // hard-coded icon vertices
-    let iconVertices = [0.011588137289060524,-0.03566461936106826,0,0,0,1,0.0031868316514665415,-0.03736434268156221,0,0,0,1,-0.005380973324669226,-0.037111927005737635,0,0,0,1,-0.013667643745468132,-0.034920560053455126,0,0,0,1,-0.021240233884681232,-0.030904732073325593,0,0,0,1,-0.027703105884046744,-0.02527425418043616,0,0,0,1,-0.032718600265229894,-0.018323296556135814,0,0,0,1,-0.03602467730092258,-0.010415019220548445,0,0,0,1,-0.03744860755329652,-0.001962598359110397,0,0,0,1,-0.03691599630337094,0.006592360497538301,0,0,0,1,-0.03445467038058369,0.014802894614410034,0,0,0,1,-0.030193224321107184,0.0222400360857464,0,0,0,1,-0.024354301812381886,0.02851522371000116,0,0,0,1,-0.017242963441794747,0.033300603774480284,0,0,0,1,-0.009230748488587223,0.036346159114003296,0,0,0,1,-0.000736263467273561,0.037492771518077436,0,0,0,1,0.007796688405665969,0.03668053502751771,0,0,0,1,0.01592229417302675,0.03395188578367332,0,0,0,1,0.023216023099118785,0.029449384908027926,0,0,0,1,0.02929680672017844,0.02340827024793818,0,0,0,1,0.03384694816311977,0.01614416613031107,0,0,0,1,0.036628720549532715,0.008036593239939417,0,0,0,1,0.037496787284025265,-0.000490859833925418,0,0,0,1,0.036405795316009806,-0.008992667424563137,0,0,0,1,0.0334127446570638,-0.017024643740233006,0,0,0,1,0.006952882373436317,-0.021398771616640958,0,0,0,1,0.0019120989908799207,-0.022418605608937325,0,0,0,1,-0.00322858399480154,-0.022267156203442582,0,0,0,1,-0.008200586247280879,-0.02095233603207308,0,0,0,1,-0.012744140330808743,-0.018542839243995357,0,0,0,1,-0.01662186353042805,-0.015164552508261694,0,0,0,1,-0.019631160159137934,-0.010993977933681488,0,0,0,1,-0.021614806380553547,-0.0062490115323290685,0,0,0,1,-0.022469164531977913,-0.001177559015466241,0,0,0,1,-0.022149597782022565,0.0039554162985229804,0,0,0,1,-0.02067280222835021,0.008881736768646016,0,0,0,1,-0.018115934592664307,0.013344021651447838,0,0,0,1,-0.014612581087429133,0.017109134226000702,0,0,0,1,-0.010345778065076847,0.019980362264688162,0,0,0,1,-0.005538449093152334,0.021807695468401986,0,0,0,1,-0.0004417580803641394,0.022495662910846467,0,0,0,1,0.004678013043399584,0.022008321016510637,0,0,0,1,0.009553376503816054,0.020371131470203988,0,0,0,1,0.013929613859471265,0.017669630944816758,0,0,0,1,0.01757808403210706,0.014044962148762899,0,0,0,1,0.02030816889787186,0.00968649967818664,0,0,0,1,0.021977232329719626,0.004821955943963646,0,0,0,1,0.022498072370415165,-0.0002945159003552508,0,0,0,1,0.021843477189605887,-0.005395600454737887,0,0,0,1,0.020047646794238275,-0.010214786244139802,0,0,0,1,0.03875878380219401,-0.019748586738670287,0,0,0,1,0.014701607649108064,-0.007490843245702525,0,0,0,1,0.021511430349024266,-0.020910723668469192,0,0,0,1];
+    let iconVertices = [0.011588137289060524,-0.03566461936106826,0.0031868316514665415,-0.03736434268156221,-0.005380973324669226,-0.037111927005737635,-0.013667643745468132,-0.034920560053455126,-0.021240233884681232,-0.030904732073325593,-0.027703105884046744,-0.02527425418043616,-0.032718600265229894,-0.018323296556135814,-0.03602467730092258,-0.010415019220548445,-0.03744860755329652,-0.001962598359110397,-0.03691599630337094,0.006592360497538301,-0.03445467038058369,0.014802894614410034,-0.030193224321107184,0.0222400360857464,-0.024354301812381886,0.02851522371000116,-0.017242963441794747,0.033300603774480284,-0.009230748488587223,0.036346159114003296,-0.000736263467273561,0.037492771518077436,0.007796688405665969,0.03668053502751771,0.01592229417302675,0.03395188578367332,0.023216023099118785,0.029449384908027926,0.02929680672017844,0.02340827024793818,0.03384694816311977,0.01614416613031107,0.036628720549532715,0.008036593239939417,0.037496787284025265,-0.000490859833925418,0.036405795316009806,-0.008992667424563137,0.0334127446570638,-0.017024643740233006,0.006952882373436317,-0.021398771616640958,0.0019120989908799207,-0.022418605608937325,-0.00322858399480154,-0.022267156203442582 ,-0.008200586247280879,-0.02095233603207308 ,-0.012744140330808743,-0.018542839243995357 ,-0.01662186353042805,-0.015164552508261694 ,-0.019631160159137934,-0.010993977933681488 ,-0.021614806380553547,-0.0062490115323290685 ,-0.022469164531977913,-0.001177559015466241 ,-0.022149597782022565,0.0039554162985229804 ,-0.02067280222835021,0.008881736768646016 ,-0.018115934592664307,0.013344021651447838 ,-0.014612581087429133,0.017109134226000702 ,-0.010345778065076847,0.019980362264688162 ,-0.005538449093152334,0.021807695468401986 ,-0.0004417580803641394,0.022495662910846467 ,0.004678013043399584,0.022008321016510637 ,0.009553376503816054,0.020371131470203988 ,0.013929613859471265,0.017669630944816758 ,0.01757808403210706,0.014044962148762899 ,0.02030816889787186,0.00968649967818664 ,0.021977232329719626,0.004821955943963646 ,0.022498072370415165,-0.0002945159003552508 ,0.021843477189605887,-0.005395600454737887 ,0.020047646794238275,-0.010214786244139802 ,0.03875878380219401,-0.019748586738670287 ,0.014701607649108064,-0.007490843245702525 ,0.021511430349024266,-0.020910723668469192 ];
     const iconIndices = [0,1,26,0,26,25,1,2,27,1,27,26,2,3,28,2,28,27,3,4,29,3,29,28,4,5,30,4,30,29,5,6,31,5,31,30,6,7,32,6,32,31,7,8,33,7,33,32,8,9,34,8,34,33,9,10,35,9,35,34,10,11,36,10,36,35,11,12,37,11,37,36,12,13,38,12,38,37,13,14,39,13,39,38,14,15,40,14,40,39,15,16,41,15,41,40,16,17,42,16,42,41,17,18,43,17,43,42,18,19,44,18,44,43,19,20,45,19,45,44,20,21,46,20,46,45,21,22,47,21,47,46,22,23,48,22,48,47,23,24,49,23,49,48,50,51,52];
 
-    for(let i = 0; i < iconVertices.length; i+=6)
+    let vertices: number[] = []
+
+    for(let i = 0; i < iconVertices.length; i+=2)
     {
-        iconVertices[i] += object.Points[0];
-        iconVertices[i+1] += object.Points[1];
+        let x =iconVertices[i] + object.Points[0];
+        let y = iconVertices[i+1] + object.Points[1];
+        pushVertex(vertices, x, y, [0,0,0,1]);
     }
 
     return {
         UsrID: object.UsrID,
         ObjID: object.ObjID,
-        Vertices: iconVertices,
+        Vertices: vertices,
         Indices: iconIndices,
         Type: object.Type,
-        Image: null
+        ImageId: null
     };
 }
 
@@ -403,10 +504,10 @@ function EllipseToGPUObj(object: Obj): GPUObj {
         const theta = (i / segments) * 2 * Math.PI;
         const x = cx + rx * Math.cos(theta);
         const y = cy + ry * Math.sin(theta);
-        vertices.push(x, y, object.Color[0], object.Color[1], object.Color[2], object.Color[3]);
+        pushVertex(vertices, x, y, object.Color);
     }
 
-    vertices.push(cx, cy, object.Color[0], object.Color[1], object.Color[2], object.Color[3]);
+    pushVertex(vertices, cx, cy, object.Color);
     for (let i = 1; i <= segments; i++) {
         indices.push(0, i, i + 1);
     }
@@ -418,7 +519,7 @@ function EllipseToGPUObj(object: Obj): GPUObj {
         Vertices: vertices,
         Indices: indices,
         Type: object.Type,
-        Image: null
+        ImageId: null
     };
 
     return gpuObj;
@@ -448,7 +549,7 @@ function ArrowToGPUObj(object: Obj): GPUObj {
     ];
 
     // center
-    vertices.push(cx, object.Points[3], object.Color[0], object.Color[1], object.Color[2], object.Color[3]);
+    pushVertex(vertices, cx, object.Points[3], object.Color);
     const centerIndex = 0;
 
 
@@ -456,6 +557,7 @@ function ArrowToGPUObj(object: Obj): GPUObj {
         const x = cx + unitArrow[i] * rx;
         const y = cy + unitArrow[i + 1] * Math.sign(y1-y0) * ry;
         vertices.push(x, y, object.Color[0], object.Color[1], object.Color[2], object.Color[3]);
+        pushVertex(vertices, x, y, object.Color);
     }
 
     for (let i = 1; i <= 7; i++) {
@@ -469,7 +571,7 @@ function ArrowToGPUObj(object: Obj): GPUObj {
         Vertices: vertices,
         Indices: indices,
         Type: object.Type,
-        Image: null
+        ImageId: null
     };
 
     return gpuObj;
@@ -498,14 +600,14 @@ function PentagonToGPUObj(object: Obj): GPUObj
     ];
 
     // center
-    vertices.push(cx, cy, object.Color[0], object.Color[1], object.Color[2], object.Color[3]);
+    pushVertex(vertices, cx, cy, object.Color);
     const centerIndex = 0;
 
 
     for (let i = 0; i < unitPentagon.length; i += 2) {
         const x = cx + unitPentagon[i] * rx;
         const y = cy + unitPentagon[i + 1] * ry;
-        vertices.push(x, y, object.Color[0], object.Color[1], object.Color[2], object.Color[3]);
+        pushVertex(vertices, x, y, object.Color);
     }
 
     for (let i = 1; i <= 5; i++) {
@@ -519,7 +621,7 @@ function PentagonToGPUObj(object: Obj): GPUObj
         Vertices: vertices,
         Indices: indices,
         Type: object.Type,
-        Image: null
+        ImageId: null
     };
 
     return gpuObj;
@@ -552,14 +654,14 @@ function StarToGPUObj(object: Obj): GPUObj {
     ];
 
     // center
-    vertices.push(cx, cy, object.Color[0], object.Color[1], object.Color[2], object.Color[3]);
+    pushVertex(vertices, cx, cy, object.Color);
     const centerIndex = 0;
 
 
     for (let i = 0; i < unitStar.length; i += 2) {
         const x = cx + unitStar[i] * rx;
         const y = cy + unitStar[i + 1] * ry;
-        vertices.push(x, y, object.Color[0], object.Color[1], object.Color[2], object.Color[3]);
+        pushVertex(vertices, x, y, object.Color);
     }
 
     for (let i = 1; i <= 10; i++) {
@@ -573,7 +675,7 @@ function StarToGPUObj(object: Obj): GPUObj {
         Vertices: vertices,
         Indices: indices,
         Type: object.Type,
-        Image: null
+        ImageId: null
     };
 
     return gpuObj;
@@ -582,12 +684,12 @@ function StarToGPUObj(object: Obj): GPUObj {
 // Converts a triangle object into GPU-ready object
 function TriangleToGPUObj(object: Obj): GPUObj
 {
-    const vertices: number[] = 
-    [
-        object.Points[0], object.Points[1], object.Color[0], object.Color[1], object.Color[2], object.Color[3],
-        (object.Points[0] + object.Points[2])/2, object.Points[3], object.Color[0], object.Color[1], object.Color[2], object.Color[3],
-        object.Points[2], object.Points[1], object.Color[0], object.Color[1], object.Color[2], object.Color[3],
-    ];
+    const vertices: number[] = []
+
+    pushVertex(vertices, object.Points[0], object.Points[1], object.Color);
+    pushVertex(vertices, (object.Points[0] + object.Points[2])/2, object.Points[3], object.Color);
+    pushVertex(vertices, object.Points[2], object.Points[1], object.Color);
+
     const indices: number[] = [ 0, 1, 2];
 
     const gpuObj: GPUObj = {
@@ -596,7 +698,7 @@ function TriangleToGPUObj(object: Obj): GPUObj
         Vertices: vertices,
         Indices: indices,
         Type: object.Type,
-        Image: null
+        ImageId: null
     };
 
     return gpuObj;
@@ -606,13 +708,13 @@ function TriangleToGPUObj(object: Obj): GPUObj
 // Converts a rectangle object into GPU-ready object
 function RectangleToGPUObj(object: Obj): GPUObj
 {
-    const vertices = 
-    [
-        object.Points[0], object.Points[1], object.Color[0], object.Color[1], object.Color[2], object.Color[3],
-        object.Points[2], object.Points[1], object.Color[0], object.Color[1], object.Color[2], object.Color[3],
-        object.Points[2], object.Points[3], object.Color[0], object.Color[1], object.Color[2], object.Color[3],
-        object.Points[0], object.Points[3], object.Color[0], object.Color[1], object.Color[2], object.Color[3]
-    ];
+    const vertices: number[] = []
+
+    pushVertex(vertices, object.Points[0], object.Points[1], object.Color);
+    pushVertex(vertices, object.Points[2], object.Points[1], object.Color);
+    pushVertex(vertices, object.Points[2], object.Points[3], object.Color);
+    pushVertex(vertices, object.Points[0], object.Points[3], object.Color);
+
     const indices = 
     [
         0, 1, 2, 2, 3, 0
@@ -624,7 +726,7 @@ function RectangleToGPUObj(object: Obj): GPUObj
         Vertices: vertices,
         Indices: indices,
         Type: object.Type,
-        Image: null
+        ImageId: null
     }
 
     return obj;
@@ -645,13 +747,14 @@ function LineToGPUObj(object: Obj): GPUObj
     dx = -dy;
     dy = dxTemp;
 
-    const vertices = 
-    [
-        object.Points[0]+dx, object.Points[1]+dy, object.Color[0], object.Color[1], object.Color[2], object.Color[3],
-        object.Points[0]-dx, object.Points[1]-dy, object.Color[0], object.Color[1], object.Color[2], object.Color[3],
-        object.Points[2]-dx, object.Points[3]-dy, object.Color[0], object.Color[1], object.Color[2], object.Color[3],
-        object.Points[2]+dx, object.Points[3]+dy, object.Color[0], object.Color[1], object.Color[2], object.Color[3]
-    ];
+    const vertices: number[] = []
+
+    pushVertex(vertices, object.Points[0]+dx, object.Points[1]+dy, object.Color);
+    pushVertex(vertices, object.Points[0]-dx, object.Points[1]-dy, object.Color);
+    pushVertex(vertices, object.Points[2]-dx, object.Points[3]-dy, object.Color);
+    pushVertex(vertices, object.Points[2]+dx, object.Points[3]+dy, object.Color);
+
+
     const indices = 
     [
         0, 1, 2, 2, 3, 0
@@ -663,7 +766,7 @@ function LineToGPUObj(object: Obj): GPUObj
         Vertices: vertices,
         Indices: indices,
         Type: object.Type,
-        Image: null
+        ImageId: null
     }
 
     return obj;
@@ -708,11 +811,9 @@ function BrushToGPUObj(object: Obj): GPUObj {
             ny = (ny / mlen) * object.ExtraArgs[0];
         }
 
-        const idx = vertices.length / 6;
-        vertices.push(
-            x - nx, y - ny, object.Color[0], object.Color[1], object.Color[2], object.Color[3],
-            x + nx, y + ny, object.Color[0], object.Color[1], object.Color[2], object.Color[3]
-        );
+        const idx = vertices.length / VERTEX_STRIDE;
+        pushVertex(vertices, x - nx, y - ny, object.Color);
+        pushVertex(vertices, x + nx, y + ny, object.Color);
 
         if (i > 0) {
             indices.push(
@@ -728,48 +829,9 @@ function BrushToGPUObj(object: Obj): GPUObj {
         Vertices: vertices,
         Indices: indices,
         Type: object.Type,
-        Image: null
+        ImageId: null
     };
 }
-
-//
-// CONVERTS ARRAY OF OBJECTS TO FINAL VERTEX AND INDEX BUFFERS FOR RENDERING
-//
-export function bakeObjectsToGPUArrays(objectArray: Obj[]): {vertices: Float32Array, indices: Uint16Array}
-{
-    let verticesTemporary: number[] = [];
-    let indicesTemporary: number[] = [];
-
-    for(let i = 0; i < objectArray.length; i++)
-    {
-        const object = structuredClone(objectArray[i])
-        // 1. Scale
-        ScaleObject(object)
-        // 1.5. Convert to GPUObj
-        let newObj = ConvertToGPUObj(object)!;
-        // 2. Rotate
-        if(object.Angle != 0)
-        {
-            RotateGPUObj(newObj, [0,0], object.Angle)
-        }
-        // 3. Translate
-        for(let i = 0; i < newObj.Vertices.length; i+=6)
-        {
-            newObj.Vertices[i] += object.PivotPoint[0];
-            newObj.Vertices[i+1] += object.PivotPoint[1];
-        }
-
-        let currentNumVertices = verticesTemporary.length / 6;
-        verticesTemporary = verticesTemporary.concat(newObj.Vertices);
-        indicesTemporary = indicesTemporary.concat(newObj.Indices.map(x => currentNumVertices+x));
-    }
-
-    let vertices = new Float32Array(verticesTemporary);
-    let indices = new Uint16Array(indicesTemporary);
-
-    return {vertices, indices};
-}
-
 
 // Finds the most recently created object which the cursor is in the bounds of
 export function CursorObjectCollision(xpos: number, ypos: number)
@@ -788,4 +850,54 @@ export function CursorObjectCollision(xpos: number, ypos: number)
     }
 
     return null;
+}
+
+//
+// CONVERTS ARRAY OF OBJECTS TO FINAL VERTEX AND INDEX BUFFERS FOR RENDERING
+//
+export function renderGPUObjects(
+    gl: WebGLRenderingContext,
+    program: WebGLProgram,
+    vertexBuffer: WebGLBuffer,
+    indexBuffer: WebGLBuffer,
+    gpuObjects: GPUObj[]
+) {
+    gl.useProgram(program);
+    gl.activeTexture(gl.TEXTURE0);
+
+    const textureLocation = gl.getUniformLocation(program, "u_texture");
+    gl.uniform1i(textureLocation, 0);
+
+    for (const obj of gpuObjects) {
+        // Bind texture if exists
+        if (obj.ImageId) {
+            gl.bindTexture(gl.TEXTURE_2D, imageCache.get(obj.ImageId)!);
+
+            if(!imageCache.get(obj.ImageId))
+            {
+                console.log("Could not find image in set of images. ")
+            }
+        }
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+        gl.bufferData(
+            gl.ARRAY_BUFFER,
+            new Float32Array(obj.Vertices),
+            gl.STATIC_DRAW
+        );
+
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+        gl.bufferData(
+            gl.ELEMENT_ARRAY_BUFFER,
+            new Uint16Array(obj.Indices),
+            gl.STATIC_DRAW
+        );
+
+        gl.drawElements(
+            gl.TRIANGLES,
+            obj.Indices.length,
+            gl.UNSIGNED_SHORT,
+            0
+        );
+    }
 }

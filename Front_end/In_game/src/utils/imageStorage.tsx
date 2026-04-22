@@ -42,21 +42,24 @@ export class ImageStorage {
         });
     }
 
-    async uploadImage(imageBinaryArrayBuffer: ArrayBuffer): Promise<void> {
+    async uploadImage(imageBinaryArrayBuffer: ArrayBuffer): Promise<string> {
         const hash = await hashArrayBuffer(imageBinaryArrayBuffer);
         
-        const img: Image = {
-            binaryData: imageBinaryArrayBuffer,
-            imageId: hash,
-        };
+        const base64 = btoa(
+        String.fromCharCode(...new Uint8Array(imageBinaryArrayBuffer))
+        );
 
         console.log("Sending image:");
-        console.log(img);
+        console.log(base64);
 
         this.Websocket.sendMessage({
-            id: this.userName,
-            image: img
+        type: "image",
+        id: this.userName,
+        imageId: hash,
+        data: base64
         });
+
+        return hash;
     }
     _find_image(imageid: string): Image | null {
         this.imageStorage.forEach(element => {
