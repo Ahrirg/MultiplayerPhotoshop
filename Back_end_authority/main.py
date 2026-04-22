@@ -128,6 +128,7 @@ def read_root():
     #return {"Authority server": "Hello world"}
     return FileResponse("./static/dist/frontpage.html")
 
+'''
 #Health status Endpoint
 @app.get("/status")
 def show_server_status(db: Session = Depends(get_database)):
@@ -188,6 +189,7 @@ def show_server_status(db: Session = Depends(get_database)):
         "services": status,
         "timestamp": datetime.datetime.utcnow().isoformat()
     }
+'''
 
 @app.get("/game")
 def read_root():
@@ -423,3 +425,89 @@ def read_info():
         message = file.read()
     html_content = markdown.markdown(message)
     return f"<html><body>{html_content}</body></html>"
+
+@app.get("/status")
+def show_server_status(db: Session = Depends(get_database)):
+
+    status = {
+        "api": "ok",
+        "database": "unknown",
+        "sessions": []
+    }
+
+    # --- DB health ---
+    try:
+        db.execute(text("SELECT 1"))
+        status["database"] = "ok"
+    except Exception:
+        logging.exception("Database health check failed")
+        status["database"] = "down"
+
+    # --- Session checks ---
+    status["sessions"] = get_sessions_status()
+
+    # --- Overall system status ---
+    overall = "ok"
+
+    if status["database"] == "down":
+        overall = "down"
+    elif isinstance(status["sessions"], list) and any(
+        s["status"] != "active" for s in status["sessions"]
+    ):
+        overall = "degraded"
+
+    return {
+        "status": overall,
+        "services": status,
+        "timestamp": datetime.datetime.utcnow().isoformat()
+    }
+
+@app.get("/session/status")
+def get_sessions_status(db: Session = Depends(get_database)):
+    sessions = {}
+    now_ts = int(datetime.datetime.now().timestamp())
+    try:
+        result = db.execute(text("SELECT * FROM sessions")).fetchall()
+
+        for r in result:
+            session = dict(r._mapping)
+
+            session_id = session["session_id"]
+            host = f"{session['host']}:{session['port']}"
+            expires_at = session["expires_at"]
+
+            session_status = {
+                "session_id": session_id,
+                "host": host,
+                "status": "unknown",
+                "reason": ""
+            }
+
+            # 1. Expiration check (DB-based)
+            if now_ts > expires_at:
+                session_status["status"] = "expired"
+                session_status["reason"] = "expired"
+
+            else:
+                # 2. Check Rust server health
+                try:
+                    resp = requests.get(f"{host}/health", timeout=1)
+
+                    if resp.status_code != 200:
+                        session_status["status"] = "invalid"
+                        session_status["reason"] = f"health returned {resp.status_code}"
+                    else:
+                        r = resp.json()
+                        session_status["status"] = f"active: {r.get("status", "unknown")}"
+
+                except requests.exceptions.RequestException:
+                    session_status["status"] = "invalid"
+                    session_status["reason"] = "server unreachable"
+
+            sessions.append(session_status)
+
+    except Exception:
+        logging.exception("Failed to fetch sessions")
+        sessions = "unavailable"
+    
+    return sessions
