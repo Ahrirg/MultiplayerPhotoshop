@@ -6,6 +6,7 @@ import requests
 import datetime
 import subprocess
 import socket
+import uuid
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from fastapi import FastAPI, HTTPException, Header, Depends
@@ -14,6 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from dotenv import load_dotenv
 from pydantic import BaseModel
+from passlib.context import CryptContext
 
 from database import get_database, init_db
 
@@ -84,11 +86,20 @@ def not_found(request, exc):
         content={"error": "Route not found"}
     )
 
+#password hashing and verification
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def hash_password(password: str):
+    return pwd_context.hash(password)
+
+def verify_password(password: str, hashed: str):
+    return pwd_context.verify(password, hashed)
+
 def load_sessions_on_startup():
     db = get_database()
 
     try:
-        now = datetime.datetime.now().timestamp()
+        now = int(datetime.datetime.now().timestamp())
 
         result = db.execute(text("SELECT * FROM sessions")).fetchall()
 
@@ -128,69 +139,6 @@ def read_root():
     #return {"Authority server": "Hello world"}
     return FileResponse("./static/dist/frontpage.html")
 
-'''
-#Health status Endpoint
-@app.get("/status")
-def show_server_status(db: Session = Depends(get_database)):
-    status = {
-        "api": "ok",
-        "database": "unknown",
-        "sessions": []
-    }
-
-    # Check database connectivity
-    try:
-        db.execute(text("SELECT 1"))
-        status["database"] = "ok"
-    except Exception:
-        logging.exception("Database health check failed")
-        status["database"] = "down"
-
-    try:
-        result = db.execute(text("SELECT * FROM sessions")).fetchall()
-        now_ts = datetime.datetime.now().timestamp()
-        for r in result:
-            session = dict(r._mapping)
-            session_status = {
-                "session_id": session["session_id"],
-                "host": session["host"],
-                "valid": True,
-                "host_reachable": False,
-                "reason": ""
-            }
-
-            if now_ts > session["expires_at"]:
-                session_status["valid"] = False
-                session_status["reason"] = "expired"
-
-            try:
-                resp = requests.get(session["host"], timeout=2)
-                if resp.status_code == 200:
-                    session_status["host_reachable"] = True
-                else:
-                    session_status["reason"] = f"host returned {resp.status_code}"
-            except requests.exceptions.RequestException:
-                session_status["reason"] = "host not reachable"
-
-            status["sessions"].append(session_status)
-
-    except Exception:
-        logging.exception("Failed to fetch sessions")
-        status["sessions"] = "unavailable"
-
-    overall = "ok"
-    if status["database"] == "down":
-        overall = "down"
-    elif any(s.get("valid") is False or s.get("host_reachable") is False for s in status["sessions"] if isinstance(status["sessions"], list)):
-        overall = "degraded"
-
-    return {
-        "status": overall,
-        "services": status,
-        "timestamp": datetime.datetime.utcnow().isoformat()
-    }
-'''
-
 @app.get("/game")
 def read_root():
     #return {"Authority server": "Hello world"}
@@ -203,7 +151,6 @@ def get_ip_from_id(sessionId: str, x_api_token: str | None = Header(None)):
     print("here")  
     # validate(sessionId) # disabling for testing + you still need to return if you not found 
     
-    # HOST = sessions[sessionId]["host"] # THIS NOT DYNAMIC.......... :)
     HOST = "http://localhost:3000"
 
     try:
@@ -249,7 +196,7 @@ def get_ips_from_ids(sessionId: str, x_api_token: str | None = Header(None), db:
             }
         )
 
-'''
+
 @app.post("/test-user")
 def create_user(user: UserCreate, db: Session = Depends(get_database), x_api_token: str | None = Header(None)):
     authenticate(x_api_token)
@@ -285,7 +232,70 @@ def get_users(db: Session = Depends(get_database), x_api_token: str | None = Hea
                 "Error": f"Failed to get users at Database: {e}"
             }
         )
-'''
+
+class RegisterRequest(BaseModel):
+    name: str
+    password: str
+
+
+@app.post("/auth/register")
+def register_user(user: RegisterRequest, db: Session = Depends(get_database)):
+    user_id = str(uuid.uuid4())
+    created_at = int(datetime.datetime.now().timestamp())
+
+    password_hash = hash_password(user.password)
+
+    try:
+        db.execute(
+            text("""
+                INSERT INTO users (user_id, name, password_hash, created_at)
+                VALUES (:user_id, :name, :password_hash, :created_at)
+            """),
+            {
+                "user_id": user_id,
+                "name": user.name,
+                "password_hash": password_hash,
+                "created_at": created_at
+            }
+        )
+        db.commit()
+
+        return {"message": "User registered", "user_id": user_id}
+
+    except Exception as e:
+        logging.exception("Registration failed")
+        raise HTTPException(status_code=500, detail="Registration error")
+
+class LoginRequest(BaseModel):
+    name: str
+    password: str
+
+
+@app.post("/auth/login")
+def login_user(
+    user: LoginRequest,
+    db: Session = Depends(get_database)
+):
+    result = db.execute(
+        text("SELECT * FROM users WHERE name = :name"),
+        {"name": user.name}
+    ).fetchone()
+
+    if not result:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    db_user = dict(result._mapping)
+
+    if not verify_password(user.password, db_user["password_hash"]):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    session_id = create_session(INTERNAL_API_TOKEN)["session_id"]
+
+    return {
+        "message": "Login successful",
+        "session_id": session_id,
+        "user_id": db_user["user_id"]
+    }
 
 def find_free_port():
     s = socket.socket()
