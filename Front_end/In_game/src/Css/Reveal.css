@@ -1,0 +1,132 @@
+/* Overlay with stronger blur + dim */
+.rr-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px); /* safari */
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  z-index: 9999;
+}
+
+/* Floating modal */
+.rr-modal {
+  /* ✨ visible background (not too transparent) */
+  background: linear-gradient(160deg, #1a1a1a, #101010);
+  
+  border-radius: 18px;
+  padding: 44px 36px;
+  width: 90%;
+  max-width: 420px;
+
+  /* ✅ perfect centering */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+
+  gap: 14px;
+
+  /* ✨ floating feel */
+  box-shadow:
+    0 25px 70px rgba(0, 0, 0, 0.8),
+    0 0 30px rgba(255, 255, 255, 0.05);
+
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* ✨ pop-in animation */
+.rr-reveal-animation {
+  animation: rrPopIn 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes rrPopIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.85) translateY(30px);
+    filter: blur(6px);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.03) translateY(-4px);
+    filter: blur(0);
+  }
+  100% {
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Text */
+.rr-subtitle {
+  font-size: 0.75rem;
+  letter-spacing: 2px;
+  color: #aaa;
+  opacity: 0.8;
+}
+
+.rr-title {
+  font-size: 2.6rem;
+  font-weight: 800;
+  margin: 6px 0;
+  text-align: center;
+}
+
+.rr-divider {
+  width: 70px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #fff, transparent);
+  opacity: 0.5;
+}
+
+.rr-description {
+  max-width: 300px;   /* prevents awkward wide text */
+  text-align: center;
+  font-size: 1rem;
+  color: #ddd;
+  line-height: 1.5;
+}
+
+/* Button */
+.rr-buttons {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.rr-confirm-btn {
+  min-width: 170px;
+  padding: 13px 28px;
+  border: none;
+  border-radius: 9px;
+
+  background: linear-gradient(135deg, #333, #222);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+
+  transition: all 0.25s ease;
+
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+}
+
+/* hover glow uses role color */
+.rr-confirm-btn:hover {
+  transform:  scale(1.01);
+
+  box-shadow:
+    0 0 20px var(--glow-color),
+    0 0 40px var(--glow-color),
+    0 15px 35px rgba(0, 0, 0, 0.5);
+
+  border: 1px solid var(--glow-color);
+}
+
+/* optional active feel */
+.rr-confirm-btn:active {
+  transform: scale(0.97);
+}

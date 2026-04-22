@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {TopBar} from './Topbar';
 import {RightBar} from './Rightbar';
 import {LeftBar} from './Leftbar';
@@ -9,6 +9,8 @@ import { MouseLayer } from "./Components/MouseLayer";
 import { Waiting } from "./Waiting";
 import { ImageDropOverlay } from "./Components/ImageDrag";
 import { ImageStorage } from "./utils/imageStorage";
+import { ROLES } from "./Components/Roles";
+import { RoleRevealOverlay } from "./RoleReveal";
 // import "./Css/App.css";
 
 function App() {
@@ -17,8 +19,20 @@ function App() {
   const [serverIp, setServerIp] = useState<string>("");
   const [seenPlayer, setSeenPlayer] = useState<string[]>([]);
   const [imageManager, setImageManager] = useState<ImageStorage | null>(null);
-
   const mainServerIp = `${window.location.protocol}//${window.location.hostname}:8000`;
+  const [userRole, setUserRole] = useState<any | null>(null);
+
+  function getRandomRole() {
+    const roles = Object.values(ROLES);
+    return roles[Math.floor(Math.random() * roles.length)];
+  }
+
+  useEffect(() => {
+    if (!userRole) {
+      setUserRole(getRandomRole());
+    }
+  }, [userRole]);
+
   return (
     <>
       <Login_overlay
@@ -31,6 +45,13 @@ function App() {
         sessionIp={serverIp}
         seenPlayers={seenPlayer}
       />
+      
+      {userRole && (
+        <RoleRevealOverlay
+          role={userRole}
+          onConfirm={() => console.log("User understood their role")}
+        />
+      )}
 
       <ImageDropOverlay
         src="./assets/dragDrop.png"
