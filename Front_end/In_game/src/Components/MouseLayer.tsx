@@ -94,14 +94,16 @@ export function MouseLayer({ username, sessionIp, seenPlayers, setSeenPlayer }: 
     <div
       className="mouse-overlay"
     >
-      {mousePointPos.map((ptr) => (
-        <MousePtr
-          key={ptr.name}
-          color=""
-          RelativeX={ptr.x}
-          RelativeY={ptr.y}
-          name={ptr.name}
-        />
+      {[...mousePointPos]
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((ptr) => (
+          <MousePtr
+            key={ptr.name}
+            color=""
+            RelativeX={ptr.x}
+            RelativeY={ptr.y}
+            name={ptr.name}
+          />
       ))}
     </div>
   );

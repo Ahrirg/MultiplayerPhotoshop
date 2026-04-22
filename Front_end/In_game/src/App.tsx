@@ -59,7 +59,7 @@ function App() {
         onDropFile={async (file: File) => {
           console.log("Dropped:", file);
           if (!imageManager){
-            setImageManager(new ImageStorage(serverIp, username, (image) => {}));
+            setImageManager(new ImageStorage(serverIp, username, (image) => { /* CIA */ }));
           }
           const arrbuf = await file.arrayBuffer();
           imageManager?.uploadImage(arrbuf);
