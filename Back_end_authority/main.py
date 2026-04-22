@@ -24,7 +24,8 @@ load_dotenv("env/.env")
 # NOT PERMANENT to create db for session storage
 init_db()
 
-#sessions = {}
+# this will be filled up at start-up
+session_processes = {}
 
 class UserCreate(BaseModel):
     name: str
@@ -71,6 +72,7 @@ def validate(sessionId: str, db: Session):
     session = dict(result._mapping)
 
     if datetime.datetime.now().timestamp() > session['expires_at']:
+        stop_rust_session(sessionId)
         logging.warning("Session is expired")
         raise HTTPException(status_code=401, detail="Session is expired")
     return session
@@ -81,6 +83,45 @@ def not_found(request, exc):
         status_code=404,
         content={"error": "Route not found"}
     )
+
+def load_sessions_on_startup():
+    db = get_database()
+
+    try:
+        now = datetime.datetime.now().timestamp()
+
+        result = db.execute(text("SELECT * FROM sessions")).fetchall()
+
+        for r in result:
+            session = dict(r._mapping)
+            session_id = session["session_id"]
+
+            # Remove expired sessions immediately
+            if now > session["expires_at"]:
+                logging.info(f"Removing expired session {session_id}")
+                stop_rust_session(session_id)
+                continue
+
+            # Restore into memory (NO process yet)
+            session_processes[session_id] = {
+                "process": None,  # important: we don’t have it after restart
+                "host": session["host"],
+                "port": session["port"],
+                "expires_at": session["expires_at"]
+            }
+
+        logging.info(f"Restored {len(session_processes)} active sessions into memory")
+
+    except Exception as e:
+        logging.error(f"Startup session load failed: {e}")
+
+    finally:
+        db.close()
+
+@app.on_event("startup")
+def startup():
+    load_sessions_on_startup()
+
 
 @app.get("/")
 def read_root():
@@ -263,6 +304,37 @@ def start_rust_session(port: int, session_id: str): #TO DO
     except Exception as e:
         logging.error(f"Failed to start Rust session server: {e}")
         return None
+    
+
+def stop_rust_session(session_id: str):
+    process = session_processes.get(session_id)
+
+    # Stop Rust process
+    if process:
+        try:
+            process.terminate()
+            process.wait(timeout=5)
+            logging.info(f"Stopped Rust session {session_id}")
+        except Exception as e:
+            logging.warning(f"Failed to stop process {session_id}: {e}")
+
+        session_processes.pop(session_id, None)
+
+    # Delete from DB
+    db = get_database()
+    try:
+        db.execute(
+            text("DELETE FROM sessions WHERE session_id = :id"),
+            {"id": session_id}
+        )
+        db.commit()
+        logging.info(f"Deleted session {session_id} from DB")
+
+    except Exception as e:
+        logging.error(f"Failed to delete session {session_id} from DB: {e}")
+
+    finally:
+        db.close()
 
 #SESSION_SERVER_URL = "http://localhost:3000"
 
