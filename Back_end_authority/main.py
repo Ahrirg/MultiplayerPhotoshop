@@ -22,7 +22,7 @@ if not os.path.exists("env/.env"):
 load_dotenv("env/.env")
 
 # NOT PERMANENT to create db for session storage
-init_db()
+init_db(reset=True)
 
 #sessions = {}
 
@@ -153,42 +153,42 @@ def read_root():
     #return {"Authority server": "Hello world"}
     return FileResponse("./static/dist/game.html")
 
-#Use this for testing
-@app.get("/join/{sessionId}")
-def get_ip_from_id(sessionId: str, x_api_token: str | None = Header(None)):
-    authenticate(x_api_token)
-    print("here")  
-    # validate(sessionId) # disabling for testing + you still need to return if you not found 
+# #Use this for testing
+# @app.get("/join/{sessionId}")
+# def get_ip_from_id(sessionId: str, x_api_token: str | None = Header(None)):
+#     authenticate(x_api_token)
+#     print("here")  
+#     # validate(sessionId) # disabling for testing + you still need to return if you not found 
     
-    # HOST = sessions[sessionId]["host"] # THIS NOT DYNAMIC.......... :)
-    HOST = "http://localhost:3000"
+#     # HOST = sessions[sessionId]["host"] # THIS NOT DYNAMIC.......... :)
+#     HOST = "http://localhost:3000"
 
-    try:
-        print("here1")
-        r = requests.get(HOST, timeout=2)
-        print("here2")
-        logging.info("Server connection successful")
-        return {
-            "Server ip": HOST,
-            "Session ID": sessionId
-        }
-    except requests.exceptions.RequestException:
-        logging.error(f"Join failed: {HOST} not reachable")
-        raise HTTPException(
-            status_code=503,
-            detail={
-                "Server ip": "None",
-                "Session ID": sessionId,
-                "Error": "Server is not reachable"
-            }
-        )
+#     try:
+#         print("here1")
+#         r = requests.get(HOST, timeout=2)
+#         print("here2")
+#         logging.info("Server connection successful")
+#         return {
+#             "Server ip": HOST,
+#             "Session ID": sessionId
+#         }
+#     except requests.exceptions.RequestException:
+#         logging.error(f"Join failed: {HOST} not reachable")
+#         raise HTTPException(
+#             status_code=503,
+#             detail={
+#                 "Server ip": "None",
+#                 "Session ID": sessionId,
+#                 "Error": "Server is not reachable"
+#             }
+#         )
 
 @app.get("/join/{sessionId}")
 def get_ips_from_ids(sessionId: str, x_api_token: str | None = Header(None), db: Session = Depends(get_database)):
     authenticate(x_api_token)
 
     session = validate(sessionId, db)
-    HOST = session["host"]
+    HOST = f"{session['host']}:{session['port']}"
 
     try:
         requests.get(HOST, timeout=2)
@@ -342,7 +342,7 @@ def get_active_sessions():
 
 @app.get("/getallactive")
 def get_all_active_server():
-    return len(get_active_sessions())
+    return len(get_sessions())
 
 @app.get("/sessions")
 def get_sessions(db: Session = Depends(get_database)):

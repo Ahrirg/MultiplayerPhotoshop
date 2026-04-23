@@ -5,7 +5,7 @@ use axum::{
 };
 use serde_json::json;
 use tower_http::cors::{CorsLayer, Any};
-mod managers;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};mod managers;
 use std::sync::Arc;
 use clap::Parser;
 
@@ -20,6 +20,10 @@ async fn main() {
     let args = Args::parse();
     let addr = format!("0.0.0.0:{}", args.port);
 
+    let now = SystemTime::now();
+    let game_start = now + Duration::from_secs(30);
+    let game_end = now + Duration::from_secs(10 * 60);
+
     let chat_queue = managers::messages::ChatQueue::new();
     let mouse_chat = Arc::new(managers::mousepointers::MousePointerState::new());
     let canvas_chat = Arc::new(managers::mousepointers::MousePointerState::new());
@@ -27,10 +31,12 @@ async fn main() {
 
     let app = Router::new()
         .route("/", get(|| async { "Hello, World! from session rust server !!" }))
-        .route("/status", get(|| async {
+        .route("/status", get(move || async move {
             Json(json!({
                 "up": "Server is up",
-                "status": "midgame"
+                "status": "midgame",
+                "game_start": game_start.duration_since(UNIX_EPOCH).unwrap().as_millis(),
+                "game_end": game_end.duration_since(UNIX_EPOCH).unwrap().as_millis(),
             }))
         }))
         .route("/info", get(managers::api::read_info))

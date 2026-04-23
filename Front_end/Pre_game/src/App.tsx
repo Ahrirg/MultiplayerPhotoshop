@@ -1,15 +1,10 @@
-import { useState } from 'react';
 import LandingPage from './Landingpage';
 import './Landingpage.css';
 
-type Page = 'landing' | 'game';
-
 export default function App() {
-  const [page, setPage] = useState<Page>('landing');
+  const handlePlay = (username: string, session_id: string) => {
+    window.location.href = `${window.location.origin}/game?username=${username}&session_id=${session_id}`;
+  };
 
-  if (page === 'game') {
-    window.location.href = `${window.location.origin}/game`;
-  }
-
-  return <LandingPage onPlay={() => setPage('game')} />;
+  return <LandingPage onPlay={handlePlay} />;
 }
