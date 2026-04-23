@@ -1,6 +1,6 @@
 // import {ObjectType } from "./objects.js";
 import { sendObjectCreationMessage, sendObjectModificationMessage } from "./communication.js";
-import { ObjectType, CursorObjectCollision, CalculateObjGeometricProperties, GenerateObj, AddObject } from "./objects.js";
+import { ObjectType, CursorObjectCollision, CalculateObjGeometricProperties, GenerateObj, AddObject, ResetObjInGPUArray } from "./objects.js";
 import {ModifyPlayerState, GetPlayerState, PlayerAction, GenerateTemporaryObject, CursorRotationIconCollision, CursorWireframeCollision, CursorScalingRectangleCollision, existingIds} from "./player_state.js";
 
 
@@ -31,6 +31,7 @@ export function initInputHandling(canvasID: string): void
         ModifyPlayerState({ mousePosY: modY });
     });
 
+    // FOR DEBUG
     window.addEventListener("keydown", (e) => {
         if ((e.target as HTMLElement).tagName === "INPUT") return;
 
@@ -44,6 +45,52 @@ export function initInputHandling(canvasID: string): void
                     : ObjectType.Brush;
 
             ModifyPlayerState({ selectedTool: newTool });
+        }
+    });
+    window.addEventListener("keydown", (e) => {
+        if ((e.target as HTMLElement).tagName === "INPUT") return;
+
+        if (e.code === "KeyC") {
+            e.preventDefault();
+
+            let sObj = GetPlayerState().selectedObject;
+
+            if(sObj?.Type == ObjectType.Image)
+            {
+                sObj.ExtraArgs[0] = GetPlayerState().mousePosY * 2;
+                ResetObjInGPUArray(sObj.ObjID);
+            }
+        }
+    });
+        window.addEventListener("keydown", (e) => {
+        if ((e.target as HTMLElement).tagName === "INPUT") return;
+
+        if (e.code === "KeyS") {
+            e.preventDefault();
+
+            let sObj = GetPlayerState().selectedObject;
+
+            if(sObj?.Type == ObjectType.Image)
+            {
+                sObj.ExtraArgs[1] = GetPlayerState().mousePosY * 2;
+                ResetObjInGPUArray(sObj.ObjID);
+            }
+        }
+    });
+
+        window.addEventListener("keydown", (e) => {
+        if ((e.target as HTMLElement).tagName === "INPUT") return;
+
+        if (e.code === "KeyB") {
+            e.preventDefault();
+
+            let sObj = GetPlayerState().selectedObject;
+
+            if(sObj?.Type == ObjectType.Image)
+            {
+                sObj.ExtraArgs[2] = GetPlayerState().mousePosY;
+                ResetObjInGPUArray(sObj.ObjID);
+            }
         }
     });
 
@@ -68,8 +115,10 @@ export function CreateAndSendImageObject(imageId: string, width: number, height:
 
     let imageObj = GenerateObj(GetPlayerState().userID, "", ObjectType.Image, corners, [1,1,1,1], imageId, []);
     imageObj.PivotPoint = pivotPoint;
+    imageObj.ExtraArgs = [1,1,0]
     AddObject(imageObj);
-    sendObjectCreationMessage(imageObj);
+    existingIds.add(imageObj.ObjID)
+    sendObjectCreationMessage(imageObj); //not needed we create it on react side and send data
 }
 
 function mousePressed()

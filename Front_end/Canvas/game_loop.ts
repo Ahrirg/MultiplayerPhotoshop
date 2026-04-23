@@ -1,4 +1,4 @@
-import { compileWebGLShader, createWebGLContext, createWebGLProgram, setupWebGLBuffers, updateWebGLBuffers, setupWebGLVertexLayout, loadTestTexture } from "./renderer.js";
+import { compileWebGLShader, createWebGLContext, createWebGLProgram, setupWebGLBuffers, updateWebGLBuffers, setupWebGLVertexLayout, loadTestTexture, uTexture, uSaturation, uBrightness, uContrast } from "./renderer.js";
 import { vertexShaderSource, fragmentShaderSource } from "./shaders.js";
 import { AddObject, AddObjToGPUArray, GenerateObj, generateObjectId, GetGPUArray, GetObjArray, GetUIObjArray, GPUObj, imageCache, ObjectType, ObjToGPUObjArray, renderGPUObjects, ResetObjInGPUArray } from "./objects.js";
 import { CreateAndSendImageObject, initInputHandling } from "./input_handling.js";
@@ -47,14 +47,14 @@ export function initGameLoop(serverIP: string)
 // Render/game loop
 function gameLoop()
 {
-    console.log("NUMBER OF IMAGES IN CACHE = " + imageCache.size)
+    // console.log("NUMBER OF IMAGES IN CACHE = " + imageCache.size)
     /// Handling temporary object (object being created by user, or the selected object)
     HandleObjectModification();
     HandleUIObjects();
 
     // Combining canvas objects with canvas UI elements
     const combinedGPUObjectArray = [... GetGPUArray(), ... ObjToGPUObjArray(GetUIObjArray())];
-    renderGPUObjects(glContext, glProgram, vertexBuffer, indexBuffer, combinedGPUObjectArray);
+    renderGPUObjects(glContext, glProgram, vertexBuffer, indexBuffer, combinedGPUObjectArray, uTexture!, uSaturation!, uBrightness!, uContrast!);
 
     /// Requesting next frame
     requestAnimationFrame(gameLoop);
