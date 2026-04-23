@@ -118,7 +118,7 @@ export function CreateAndSendImageObject(imageId: string, width: number, height:
     imageObj.ExtraArgs = [1,1,0]
     AddObject(imageObj);
     existingIds.add(imageObj.ObjID)
-    sendObjectCreationMessage(imageObj);
+    sendObjectCreationMessage(imageObj); //not needed we create it on react side and send data
 }
 
 function mousePressed()

@@ -904,7 +904,7 @@ export function renderGPUObjects(
             }
             else
             {
-                console.log("Could not find image in set of images (OR its falsy).")
+                // console.log("Could not find image in set of images (OR its falsy).")
             }
         }
 

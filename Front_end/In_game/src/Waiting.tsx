@@ -59,7 +59,7 @@ export function Waiting({ sessionIp, seenPlayers, userRole, setUserRole  }: Logi
   if (!showRoom || !sessionIp) return null;
 
   const secondsLeft = Math.max(0, Math.floor((timeToStart - currentTime) / 1000));
-  console.log(secondsLeft)
+  // console.log(secondsLeft)
   if (timeToStart > 0 && secondsLeft <= 0) {
     if (!userRole) {
         setUserRole(getRandomRole());
@@ -81,6 +81,7 @@ export function Waiting({ sessionIp, seenPlayers, userRole, setUserRole  }: Logi
         </div>
 
         <div>Starting in {secondsLeft} sec's</div>
+        <></>
       </div>
     </div>
   );

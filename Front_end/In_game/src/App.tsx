@@ -8,12 +8,13 @@ import {Login_overlay} from './Login';
 import { MouseLayer } from "./Components/MouseLayer";
 import { Waiting } from "./Waiting";
 import { ImageDropOverlay } from "./Components/ImageDrag";
-import { ImageStorage } from "./utils/imageStorage";
+import { ImageStorage, Image, base64ToFile } from "./utils/imageStorage";
 import { RoleRevealOverlay } from "./RoleReveal";
 import { RoleInfo } from "./Components/Roles";
 import { createTextureFromArrayBuffer } from "../../Canvas/renderer";
 import { glContext } from "../../Canvas/game_loop";
 import { imageCache } from "../../Canvas/objects";
+import { CreateAndSendImageObject } from "../../Canvas/input_handling";
 // import "./Css/App.css";
 
 function App() {
@@ -51,6 +52,27 @@ function App() {
           }
 
           setServerIp(ip);
+
+          imageManagerRef.current = new ImageStorage(
+            ip,
+            usernameParam? usernameParam : "NO_USERNAME",
+            (image) => { 
+              const genData = async (image: Image) => {
+
+                const file = base64ToFile(image.binaryData, "image.png", "image/png");
+                const arrbuf = await file.arrayBuffer();
+                const bitmap = await createImageBitmap(file);
+                const hash =  image.imageId;
+                
+                createTextureFromArrayBuffer(glContext, arrbuf)
+                  .then(texture => {
+                    imageCache.set(hash, texture);
+                  });
+              }
+              console.log("Generating new photo from others1")
+              genData(image);
+            }
+          );
         } catch (err) {
           console.error("Failed to fetch session IP", err);
         }
@@ -93,11 +115,26 @@ function App() {
             imageManagerRef.current = new ImageStorage(
               serverIp,
               username,
-              (image) => {}
+              (image) => { 
+                const genData = async (image: Image) => {
+                  const arrbuf = image.binaryData;
+                  const blob = new Blob([arrbuf], { type: "image/png" })
+                  const bitmap = await createImageBitmap(blob);
+                  const hash =  image.imageId;
+                  
+                  createTextureFromArrayBuffer(glContext, arrbuf)
+                    .then(texture => {
+                      imageCache.set(hash, texture);
+                    });
+                }
+                console.log("Generating new photo from others")
+                genData(image);
+              }
             );
           }
           const arrbuf = await file.arrayBuffer();
-          const bitmap = await createImageBitmap(file);
+          const blob = new Blob([arrbuf], { type: "image/png" })
+          const bitmap = await createImageBitmap(blob);
 
           const hash = await imageManagerRef.current!.uploadImage(arrbuf);
 

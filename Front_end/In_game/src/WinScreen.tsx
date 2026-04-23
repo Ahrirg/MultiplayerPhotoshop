@@ -49,7 +49,7 @@ export function WinScreen({ sessionIp, showModal, username, setTimeLeft }: Login
   
   const secondsLeft = Math.max(0, Math.floor((timeToStart - currentTime) / 1000));
   setTimeLeft(secondsLeft);
-  console.log(secondsLeft)
+  // console.log(secondsLeft)
   if (timeToStart > 0 && secondsLeft <= 0) {
     setTimeEnd(true);
   }
