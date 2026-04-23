@@ -15,6 +15,7 @@ import { ImageStorage } from "./utils/imageStorage";
 import './Css/topBar.css'
 
 interface TopBarProps {
+  sessionIp: string;
   currentTool: string;
   username: string;
   imageStorage: ImageStorage | null;
@@ -31,13 +32,14 @@ const toolIcons: Record<string, string> = {
   Arrow: arrowIcon,
 };
 
-export function TopBar({ currentTool, username, imageStorage}: TopBarProps) {
+export function TopBar({ sessionIp, currentTool, username, imageStorage}: TopBarProps) {
   const [showPicker, setShowPicker] = useState(false);
   const [activeColor, setActiveColor] = useState('#FF0000');
   const [hue, setHue] = useState(0);
   const [brightness, setBrightness] = useState(50);
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const [showWinScreen, setShowWinScreen] = useState(false); 
+  const [showWinScreen, setShowWinScreen] = useState(false);
+  const [time, setTime] = useState(0);
  
   const getRandomRole = () => {
     const roles = ["Imposter", "Player"];
@@ -138,9 +140,11 @@ export function TopBar({ currentTool, username, imageStorage}: TopBarProps) {
         </strong>
       </div>
       <div className='win-screen'>
-        <button onClick={()=>{setShowWinScreen(true)}}><b>GAME END</b></button>
+        <button onClick={()=>{setShowWinScreen(true)}}><b>{time}</b></button>
       </div>
       <WinScreen
+        sessionIp={sessionIp}
+        setTimeLeft={setTime}
         showModal={showWinScreen}
         username={username}
       />

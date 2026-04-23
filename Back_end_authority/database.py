@@ -19,7 +19,7 @@ SessionLocal = sessionmaker(
     bind=engine
 )
 
-def init_db():
+def init_db(reset: bool = False):
     with engine.begin() as eng:
         eng.execute(text("""
         CREATE TABLE IF NOT EXISTS sessions (
@@ -29,6 +29,9 @@ def init_db():
             expires_at INTEGER NOT NULL
         )
         """))
+
+        if reset:
+            eng.execute(text("DELETE FROM sessions"))
 
 def get_database():
     db = SessionLocal()

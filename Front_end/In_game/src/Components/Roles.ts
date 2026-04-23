@@ -6,6 +6,7 @@ export type RoleInfo = {
   color: string;
 };
 
+
 export const ROLES = {
   MAFIA: {
     title: "Mafia",

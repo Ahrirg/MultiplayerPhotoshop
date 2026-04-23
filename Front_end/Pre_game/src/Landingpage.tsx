@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
 import './Landingpage.css';
+import axios from "axios";
+
+import { Login_overlay } from './Login';
 
 interface SplatProps {
   top?: string;
@@ -10,8 +13,16 @@ interface SplatProps {
   rotate: number;
 }
 
+interface serverData {
+    session_id: string,
+    host: string,
+    port: number,
+    expires_at: number,
+}
+
+
 interface LandingPageProps {
-  onPlay: () => void;
+  onPlay: (username: string, session_id: string) => void;
 }
 
 const SPLATS: SplatProps[] = [
@@ -90,9 +101,12 @@ function PlayButton2({ label, onClick, iconSize = 26, fontSize = '1.6rem' }: {
   );
 }
 
+
 export default function LandingPage({ onPlay }: LandingPageProps) {
   const [visible, setVisible] = useState<boolean>(false);
   const [currentActiveServers, setCurrentActiveServers] = useState<number>(0);
+  const [showOverlay, setShowOverlay] = useState<boolean>(false);
+  const mainServerIp = `${window.location.protocol}//${window.location.hostname}:8000`;
 
   
 
@@ -102,13 +116,9 @@ export default function LandingPage({ onPlay }: LandingPageProps) {
       serverIp = "http://localhost:8000/"
     }
 
-    const response = await fetch(`${serverIp}getallactive`)
-    if (!response.ok) {
-      return 0;
-    }
-
-    const data = await response.json();
-    const numb = Number(data);
+    const result = await axios.get(`${mainServerIp}/sessions`)
+    const numb = (result.data as serverData[]).length
+    console.log(numb)
     setCurrentActiveServers(numb)
 
     return numb
@@ -122,6 +132,11 @@ export default function LandingPage({ onPlay }: LandingPageProps) {
 
   return (
     <div className="lp-root">
+      {showOverlay? (<Login_overlay
+                        onPlay={onPlay}
+                    />): (<></>)}
+
+
       {SPLATS.map((s, i) => <PaintSplat key={i} {...s} />)}
 
       <section className={`lp-hero ${visible ? 'lp-visible' : ''}`}>
@@ -131,7 +146,7 @@ export default function LandingPage({ onPlay }: LandingPageProps) {
           <span className="lp-title-fill">MAFIA PHOTOSHOP</span>
         </h1>
         <p className="lp-tagline">Edit fast. Guess faster. Dominate even faster.</p>
-        <PlayButton label="PLAY NOW" onClick={onPlay} />
+        <PlayButton label="PLAY NOW" onClick={() => {setShowOverlay(true)}} />
         <div className='active-servers'>
           currently <strong className='active-servers-bold'>{currentActiveServers}</strong> servers are active
         </div>
@@ -176,7 +191,7 @@ export default function LandingPage({ onPlay }: LandingPageProps) {
 
       <section className="lp-cta">
         <p className="lp-cta-sub">Ready to pick up the brush?</p>
-        <PlayButton2 label="START PLAYING" onClick={onPlay} />
+        <PlayButton2 label="START PLAYING" onClick={() => {setShowOverlay(true)}} />
       </section>
 
       <footer className="lp-footer">© 2026 SkillGapped — KTU Student Project — All rights reserved</footer>

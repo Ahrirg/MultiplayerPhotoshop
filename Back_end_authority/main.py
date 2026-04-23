@@ -22,7 +22,7 @@ if not os.path.exists("env/.env"):
 load_dotenv("env/.env")
 
 # NOT PERMANENT to create db for session storage
-init_db()
+init_db(reset=True)
 
 #sessions = {}
 
@@ -153,42 +153,42 @@ def read_root():
     #return {"Authority server": "Hello world"}
     return FileResponse("./static/dist/game.html")
 
-#Use this for testing
-@app.get("/join/{sessionId}")
-def get_ip_from_id(sessionId: str, x_api_token: str | None = Header(None)):
-    authenticate(x_api_token)
-    print("here")  
-    # validate(sessionId) # disabling for testing + you still need to return if you not found 
+# #Use this for testing
+# @app.get("/join/{sessionId}")
+# def get_ip_from_id(sessionId: str, x_api_token: str | None = Header(None)):
+#     authenticate(x_api_token)
+#     print("here")  
+#     # validate(sessionId) # disabling for testing + you still need to return if you not found 
     
-    # HOST = sessions[sessionId]["host"] # THIS NOT DYNAMIC.......... :)
-    HOST = "http://localhost:3000"
+#     # HOST = sessions[sessionId]["host"] # THIS NOT DYNAMIC.......... :)
+#     HOST = "http://localhost:3000"
 
-    try:
-        print("here1")
-        r = requests.get(HOST, timeout=2)
-        print("here2")
-        logging.info("Server connection successful")
-        return {
-            "Server ip": HOST,
-            "Session ID": sessionId
-        }
-    except requests.exceptions.RequestException:
-        logging.error(f"Join failed: {HOST} not reachable")
-        raise HTTPException(
-            status_code=503,
-            detail={
-                "Server ip": "None",
-                "Session ID": sessionId,
-                "Error": "Server is not reachable"
-            }
-        )
+#     try:
+#         print("here1")
+#         r = requests.get(HOST, timeout=2)
+#         print("here2")
+#         logging.info("Server connection successful")
+#         return {
+#             "Server ip": HOST,
+#             "Session ID": sessionId
+#         }
+#     except requests.exceptions.RequestException:
+#         logging.error(f"Join failed: {HOST} not reachable")
+#         raise HTTPException(
+#             status_code=503,
+#             detail={
+#                 "Server ip": "None",
+#                 "Session ID": sessionId,
+#                 "Error": "Server is not reachable"
+#             }
+#         )
 
 @app.get("/join/{sessionId}")
 def get_ips_from_ids(sessionId: str, x_api_token: str | None = Header(None), db: Session = Depends(get_database)):
     authenticate(x_api_token)
 
     session = validate(sessionId, db)
-    HOST = session["host"]
+    HOST = f"{session['host']}:{session['port']}"
 
     try:
         requests.get(HOST, timeout=2)
@@ -251,24 +251,28 @@ def find_free_port():
     s.close()
     return port
 
-def start_rust_session(port: int, session_id: str): #TO DO
+def start_rust_session(port: int, session_id: str):
     try:
         process = subprocess.Popen(
-            ["cargo", "run", "--release", "--", "--port", str(port)],
-            cwd="/../Back_end_session/",
+            ["./Back_end_session", "--port", str(port)],
+            cwd="./../Back_end_session/target/release/",
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
+            stderr=subprocess.PIPE,
+            text=True  # so output is str instead of bytes
         )
+
+        print(f"Started process PID={process.pid}")
         return process
+
     except Exception as e:
         logging.error(f"Failed to start Rust session server: {e}")
         return None
 
 #SESSION_SERVER_URL = "http://localhost:3000"
 
-@app.post("/session/create") # TO DO
+@app.post("/session/create")
 def create_session(x_api_token: str | None = Header(None), db: Session = Depends(get_database)):
-    authenticate(x_api_token)
+    # authenticate(x_api_token)
     session_id = f"session-{int(datetime.datetime.now().timestamp())}"
     host = "http://localhost"
     port = find_free_port() # Finds a free port per session
@@ -276,8 +280,8 @@ def create_session(x_api_token: str | None = Header(None), db: Session = Depends
 
     process = start_rust_session(port, session_id)
     if not process:
-        pass #FOR TESTING
-        #raise HTTPException(status_code=500, detail="Failed to start Rust session server")
+        # pass #FOR TESTING
+        raise HTTPException(status_code=500, detail="Failed to start Rust session server")
 
     try:
         db.execute(
@@ -338,7 +342,7 @@ def get_active_sessions():
 
 @app.get("/getallactive")
 def get_all_active_server():
-    return len(get_active_sessions())
+    return len(get_sessions())
 
 @app.get("/sessions")
 def get_sessions(db: Session = Depends(get_database)):
