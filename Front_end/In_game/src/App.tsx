@@ -102,7 +102,7 @@ function App() {
       />
 
       <div className="container">
-        <TopBar currentTool={selectedTool} username={username} imageStorage={imageManager}/>
+        <TopBar sessionIp={serverIp} currentTool={selectedTool} username={username} imageStorage={imageManager}/>
         
         <div className="middle">
           <LeftBar 
