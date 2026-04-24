@@ -11,7 +11,12 @@ export enum ObjectType
     Triangle, 
     Pentagon, 
     Arrow,
-    Image
+    Image,
+    FPStar, // New shapes!
+    Hexagon,
+    Octagon,
+    Semicircle,
+    Cloud
 }
 
 // Interface for objects which are ready for the GPU to render
@@ -368,8 +373,207 @@ export function ConvertToGPUObj(object: Obj): GPUObj | null
         return UIRotationIconToGPUObj(object);
     if(object.Type == ObjectType.Image)
         return ImageToGPUObj(object);
+    if(object.Type == ObjectType.FPStar)
+        return FPStarToGPUObj(object);
+    if(object.Type == ObjectType.Hexagon)
+        return HexagonToGPUObj(object);
+    if(object.Type == ObjectType.Octagon)
+        return OctagonToGPUObj(object);
+    if(object.Type == ObjectType.Semicircle)
+        return SemicircleToGPUObj(object);
+    if(object.Type == ObjectType.Cloud)
+        return CloudToGPUObj(object);
 
     return null;
+}
+
+function CloudToGPUObj(object: Obj): GPUObj {
+    const vertices: number[] = [];
+    const indices: number[] = [];
+
+    const [x0, y0, x1, y1] = object.Points;
+
+    const cx = (x0 + x1) / 2;
+    const cy = (y0 + y1) / 2;
+
+    const rx = Math.abs(x1 - x0) / 2;
+    const ry = Math.abs(y1 - y0) / 2;
+
+    const segments = 24;
+
+    let vertexOffset = 0;
+
+    const cloudCircles = [
+        [-0.35, 0.0, 0.35],
+        [0.0, 0.2, 0.45],
+        [0.35, 0.0, 0.35],
+        [-0.15, -0.2, 0.3],
+        [0.2, -0.25, 0.28]
+    ];
+
+    for (const c of cloudCircles) {
+        const ox = c[0];
+        const oy = c[1];
+        const r = c[2];
+
+        const centerIndex = vertexOffset;
+
+        pushVertex(vertices, cx + ox * rx, cy + oy * ry, object.Color);
+        vertexOffset++;
+
+        const start = vertexOffset;
+
+        for (let i = 0; i <= segments; i++) {
+            const t = (i / segments) * 2 * Math.PI;
+
+            const x = cx + (ox * rx) + Math.cos(t) * (r * rx);
+            const y = cy + (oy * ry) + Math.sin(t) * (r * ry);
+
+            pushVertex(vertices, x, y, object.Color);
+            vertexOffset++;
+        }
+
+        for (let i = 0; i < segments; i++) {
+            indices.push(centerIndex, start + i, start + i + 1);
+        }
+    }
+
+    return {
+        UsrID: object.UsrID,
+        ObjID: object.ObjID,
+        Vertices: vertices,
+        Indices: indices,
+        Type: object.Type,
+        ImageId: null,
+        ExtraArgs: [1, 1, 0]
+    };
+}
+
+function HexagonToGPUObj(object: Obj): GPUObj {
+    const vertices: number[] = [];
+    const indices: number[] = [];
+
+    const [x0, y0, x1, y1] = object.Points;
+
+    const cx = (x0 + x1) / 2;
+    const cy = (y0 + y1) / 2;
+    const rx = Math.abs(x1 - x0) / 2;
+    const ry = Math.abs(y1 - y0) / 2;
+
+    const unit = [
+        0, 1,
+        0.866, 0.5,
+        0.866, -0.5,
+        0, -1,
+        -0.866, -0.5,
+        -0.866, 0.5
+    ];
+
+    pushVertex(vertices, cx, cy, object.Color);
+
+    for (let i = 0; i < unit.length; i += 2) {
+        pushVertex(vertices, cx + unit[i] * rx, cy + unit[i + 1] * ry, object.Color);
+    }
+
+    const n = unit.length / 2;
+
+    for (let i = 1; i <= n; i++) {
+        const next = i % n + 1;
+        indices.push(0, i, next);
+    }
+
+    return {
+        UsrID: object.UsrID,
+        ObjID: object.ObjID,
+        Vertices: vertices,
+        Indices: indices,
+        Type: object.Type,
+        ImageId: null,
+        ExtraArgs: [1, 1, 0]
+    };
+}
+
+function OctagonToGPUObj(object: Obj): GPUObj {
+    const vertices: number[] = [];
+    const indices: number[] = [];
+
+    const [x0, y0, x1, y1] = object.Points;
+
+    const cx = (x0 + x1) / 2;
+    const cy = (y0 + y1) / 2;
+    const rx = Math.abs(x1 - x0) / 2;
+    const ry = Math.abs(y1 - y0) / 2;
+
+    const unit = [
+        0, 1,
+        0.707, 0.707,
+        1, 0,
+        0.707, -0.707,
+        0, -1,
+        -0.707, -0.707,
+        -1, 0,
+        -0.707, 0.707
+    ];
+
+    pushVertex(vertices, cx, cy, object.Color);
+
+    for (let i = 0; i < unit.length; i += 2) {
+        pushVertex(vertices, cx + unit[i] * rx, cy + unit[i + 1] * ry, object.Color);
+    }
+
+    const n = unit.length / 2;
+
+    for (let i = 1; i <= n; i++) {
+        const next = i % n + 1;
+        indices.push(0, i, next);
+    }
+
+    return {
+        UsrID: object.UsrID,
+        ObjID: object.ObjID,
+        Vertices: vertices,
+        Indices: indices,
+        Type: object.Type,
+        ImageId: null,
+        ExtraArgs: [1, 1, 0]
+    };
+}
+
+function SemicircleToGPUObj(object: Obj): GPUObj {
+    const vertices: number[] = [];
+    const indices: number[] = [];
+
+    const [x0, y0, x1, y1] = object.Points;
+
+    const cx = (x0 + x1) / 2;
+    const cy = (y0 + y1) / 2;
+    const rx = Math.abs(x1 - x0) / 2;
+
+    const segments = 40;
+
+    pushVertex(vertices, cx, cy, object.Color);
+    const centerIndex = 0;
+
+    for (let i = 0; i <= segments; i++) {
+        const t = (i / segments) * Math.PI;
+        const x = cx + rx * Math.cos(t);
+        const y = cy + rx * Math.sin(t);
+        pushVertex(vertices, x, y, object.Color);
+    }
+
+    for (let i = 1; i <= segments; i++) {
+        indices.push(centerIndex, i, i + 1);
+    }
+
+    return {
+        UsrID: object.UsrID,
+        ObjID: object.ObjID,
+        Vertices: vertices,
+        Indices: indices,
+        Type: object.Type,
+        ImageId: null,
+        ExtraArgs: [1, 1, 0]
+    };
 }
 
 function ImageToGPUObj(object: Obj): GPUObj {
@@ -634,6 +838,52 @@ function PentagonToGPUObj(object: Obj): GPUObj
     };
 
     return gpuObj;
+}
+
+function FPStarToGPUObj(object: Obj): GPUObj {
+    const vertices: number[] = [];
+    const indices: number[] = [];
+
+    const [x0, y0, x1, y1] = object.Points;
+
+    const cx = (x0 + x1) / 2;
+    const cy = (y0 + y1) / 2;
+    const rx = Math.abs(x1 - x0) / 2;
+    const ry = Math.abs(y1 - y0) / 2;
+
+    const unit = [
+        0, 1,
+        0.35, 0.35,
+        1, 0,
+        0.35, -0.35,
+        0, -1,
+        -0.35, -0.35,
+        -1, 0,
+        -0.35, 0.35
+    ];
+
+    pushVertex(vertices, cx, cy, object.Color);
+
+    for (let i = 0; i < unit.length; i += 2) {
+        pushVertex(vertices, cx + unit[i] * rx, cy + unit[i + 1] * ry, object.Color);
+    }
+
+    const n = unit.length / 2;
+
+    for (let i = 1; i <= n; i++) {
+        const next = i % n + 1;
+        indices.push(0, i, next);
+    }
+
+    return {
+        UsrID: object.UsrID,
+        ObjID: object.ObjID,
+        Vertices: vertices,
+        Indices: indices,
+        Type: object.Type,
+        ImageId: null,
+        ExtraArgs: [1, 1, 0]
+    };
 }
 
 // Converts a star object into GPU-ready object
