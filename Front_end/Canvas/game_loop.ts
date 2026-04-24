@@ -39,10 +39,10 @@ export function initGameLoop(serverIP: string)
     requestAnimationFrame(gameLoop)
 }
 
-// initGameLoop("");
-// const tex = loadTestTexture(glContext!, "../rs7.jpg");
-// imageCache.set("uWu", tex);
-// CreateAndSendImageObject("uWu", 1920, 1080);
+initGameLoop("");
+const tex = loadTestTexture(glContext!, "../rs7.jpg");
+imageCache.set("uWu", tex);
+CreateAndSendImageObject("uWu", 1920, 1080);
 
 // Render/game loop
 function gameLoop()
