@@ -35,7 +35,7 @@ interface PlayerState
 let State: PlayerState =
 {
     userID: 0,
-    selectedTool: ObjectType.Cloud, 
+    selectedTool: ObjectType.Heart, 
     selectedColor: [0,0,0,1], 
     action: PlayerAction.Idle,
     mousePosX: 0,

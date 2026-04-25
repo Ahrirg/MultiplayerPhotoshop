@@ -16,7 +16,8 @@ export enum ObjectType
     Hexagon,
     Octagon,
     Semicircle,
-    Cloud
+    Cloud,
+    Heart,
 }
 
 // Interface for objects which are ready for the GPU to render
@@ -383,6 +384,8 @@ export function ConvertToGPUObj(object: Obj): GPUObj | null
         return SemicircleToGPUObj(object);
     if(object.Type == ObjectType.Cloud)
         return CloudToGPUObj(object);
+    if(object.Type == ObjectType.Heart)
+        return HeartToGPUObj(object);
 
     return null;
 }
@@ -504,24 +507,20 @@ function OctagonToGPUObj(object: Obj): GPUObj {
     const rx = Math.abs(x1 - x0) / 2;
     const ry = Math.abs(y1 - y0) / 2;
 
-    const unit = [
-        0, 1,
-        0.707, 0.707,
-        1, 0,
-        0.707, -0.707,
-        0, -1,
-        -0.707, -0.707,
-        -1, 0,
-        -0.707, 0.707
-    ];
+    const angleOffset = Math.PI / 8;
 
     pushVertex(vertices, cx, cy, object.Color);
 
-    for (let i = 0; i < unit.length; i += 2) {
-        pushVertex(vertices, cx + unit[i] * rx, cy + unit[i + 1] * ry, object.Color);
-    }
+    const n = 8;
 
-    const n = unit.length / 2;
+    for (let i = 0; i < n; i++) {
+        const t = (i / n) * 2 * Math.PI + angleOffset;
+
+        const x = cx + Math.cos(t) * rx;
+        const y = cy + Math.sin(t) * ry;
+
+        pushVertex(vertices, x, y, object.Color);
+    }
 
     for (let i = 1; i <= n; i++) {
         const next = i % n + 1;
@@ -535,9 +534,62 @@ function OctagonToGPUObj(object: Obj): GPUObj {
         Indices: indices,
         Type: object.Type,
         ImageId: null,
+        ExtraArgs: [1,1,0]
+    };
+}
+
+function HeartToGPUObj(object: Obj): GPUObj {
+    const vertices: number[] = [];
+    const indices: number[] = [];
+
+    const [x0, y0, x1, y1] = object.Points;
+
+    const cx = (x0 + x1) / 2;
+    const cy = (y0 + y1) / 2;
+
+    const rx = Math.abs(x1 - x0) / 2;
+    const ry = Math.abs(y1 - y0) / 2;
+
+    const segments = 64;
+
+    pushVertex(vertices, cx, cy, object.Color);
+
+    for (let i = 0; i <= segments; i++) {
+        const t = (i / segments) * 2 * Math.PI;
+
+        const xh = 16 * Math.pow(Math.sin(t), 3);
+        let yh =
+            13 * Math.cos(t) -
+            5 * Math.cos(2 * t) -
+            2 * Math.cos(3 * t) -
+            Math.cos(4 * t);
+
+        yh *= -1;
+        const x = cx + (xh / 18) * rx;
+        const y = cy - (yh / 18) * ry;
+
+        pushVertex(vertices, x, y, object.Color);
+    }
+
+    const n = segments + 1;
+
+    for (let i = 1; i < n; i++) {
+        indices.push(0, i, i + 1);
+    }
+
+    indices.push(0, n, 1);
+
+    return {
+        UsrID: object.UsrID,
+        ObjID: object.ObjID,
+        Vertices: vertices,
+        Indices: indices,
+        Type: object.Type,
+        ImageId: null,
         ExtraArgs: [1, 1, 0]
     };
 }
+
 
 function SemicircleToGPUObj(object: Obj): GPUObj {
     const vertices: number[] = [];
