@@ -39,23 +39,18 @@ export function initGameLoop(serverIP: string)
     requestAnimationFrame(gameLoop)
 }
 
-initGameLoop("");
-const tex = loadTestTexture(glContext!, "../rs7.jpg");
-imageCache.set("uWu", tex);
-CreateAndSendImageObject("uWu", 1920, 1080);
+// initGameLoop("");
+// const tex = loadTestTexture(glContext!, "../rs7.jpg");
+// imageCache.set("uWu", tex);
+// CreateAndSendImageObject("uWu", 1920, 1080);
 
-// Render/game loop
 function gameLoop()
 {
-    // console.log("NUMBER OF IMAGES IN CACHE = " + imageCache.size)
-    /// Handling temporary object (object being created by user, or the selected object)
     HandleObjectModification();
     HandleUIObjects();
 
-    // Combining canvas objects with canvas UI elements
     const combinedGPUObjectArray = [... GetGPUArray(), ... ObjToGPUObjArray(GetUIObjArray())];
     renderGPUObjects(glContext, glProgram, vertexBuffer, indexBuffer, combinedGPUObjectArray, uTexture!, uSaturation!, uBrightness!, uContrast!);
 
-    /// Requesting next frame
     requestAnimationFrame(gameLoop);
 }
