@@ -50,16 +50,10 @@ export function initInputHandling(canvasID: string): void
     window.addEventListener("keydown", (e) => {
         if ((e.target as HTMLElement).tagName === "INPUT") return;
 
-        if (e.code === "KeyC") {
+        if (e.code === "KeyR") {
             e.preventDefault();
 
-            let sObj = GetPlayerState().selectedObject;
-
-            if(sObj?.Type == ObjectType.Image)
-            {
-                sObj.ExtraArgs[0] = GetPlayerState().mousePosY * 2;
-                ResetObjInGPUArray(sObj.ObjID);
-            }
+            ModifyPlayerState({ action: PlayerAction.RotatingObject});
         }
     });
         window.addEventListener("keydown", (e) => {
@@ -68,13 +62,7 @@ export function initInputHandling(canvasID: string): void
         if (e.code === "KeyS") {
             e.preventDefault();
 
-            let sObj = GetPlayerState().selectedObject;
-
-            if(sObj?.Type == ObjectType.Image)
-            {
-                sObj.ExtraArgs[1] = GetPlayerState().mousePosY * 2;
-                ResetObjInGPUArray(sObj.ObjID);
-            }
+            ModifyPlayerState({action: PlayerAction.ScalingObject, howScaleBeLikeWhenWeStartYoooo: structuredClone(GetPlayerState().selectedObject?.Scale),  scalingRectIndex: 0, lastFrameMousePos: [GetPlayerState().mousePosX, GetPlayerState().mousePosY], lastRecordedMousePos: [GetPlayerState().mousePosX, GetPlayerState().mousePosY]});
         }
     });
 
@@ -91,6 +79,20 @@ export function initInputHandling(canvasID: string): void
                 sObj.ExtraArgs[2] = GetPlayerState().mousePosY;
                 ResetObjInGPUArray(sObj.ObjID);
             }
+        }
+    });
+
+    window.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+            ModifyPlayerState({action: PlayerAction.Idle, selectedObject: null});
+        }
+    });
+
+    window.addEventListener("keyup", (e) => {
+        if ((e.target as HTMLElement).tagName === "INPUT") return;
+
+        if (e.code === "KeyR" || e.code === "KeyS") {
+            ModifyPlayerState({action: PlayerAction.Selecting});
         }
     });
 
@@ -125,7 +127,7 @@ function mousePressed()
 {
     const state = GetPlayerState();
 
-    if(state.action == PlayerAction.Idle)
+    if(state.action == PlayerAction.Idle || (state.action == PlayerAction.Selecting && state.selectedTool != ObjectType.None))
     {
         // clicked on canvas with a tool -> trying to draw
         if(state.selectedTool != ObjectType.None)
