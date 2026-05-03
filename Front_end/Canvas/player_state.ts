@@ -35,7 +35,7 @@ interface PlayerState
 let State: PlayerState =
 {
     userID: 0,
-    selectedTool: ObjectType.Heart, 
+    selectedTool: ObjectType.SprayBrush, 
     selectedColor: [0,0,0,1], 
     action: PlayerAction.Idle,
     mousePosX: 0,
@@ -235,6 +235,7 @@ export function HandleObjectModification(): void
         
         // Add (modify) points of temporary object
         UpdateTemporaryObject();
+        State.lastFrameMousePos = [State.mousePosX, State.mousePosY]
         ResetObjInGPUArray(GetPlayerState().tempObject!.ObjID);
     }
     // If moving an object
