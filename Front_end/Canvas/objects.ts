@@ -18,6 +18,8 @@ export enum ObjectType
     Semicircle,
     Cloud,
     Heart,
+    SprayBrush,
+    ChaoticBrush
 }
 
 // Interface for objects which are ready for the GPU to render
@@ -77,7 +79,7 @@ function pushVertex(
 // Used for determining how to update temporary objects (a.k.a. whether to add cursor points to object or modify existing points)
 export function IsObjectTypeAppendable(objectType: ObjectType): boolean
 {
-    if(objectType == ObjectType.Brush)
+    if(objectType == ObjectType.Brush || objectType == ObjectType.ChaoticBrush || objectType == ObjectType.SprayBrush)
         return true;
 
     return false;
@@ -386,6 +388,10 @@ export function ConvertToGPUObj(object: Obj): GPUObj | null
         return CloudToGPUObj(object);
     if(object.Type == ObjectType.Heart)
         return HeartToGPUObj(object);
+    if(object.Type == ObjectType.SprayBrush)
+        return SprayBrushToGPUObj(object);
+    if(object.Type == ObjectType.ChaoticBrush)
+        return ChaoticBrushToGPUObj(object);
 
     return null;
 }
@@ -1151,6 +1157,113 @@ function BrushToGPUObj(object: Obj): GPUObj {
         ImageId: null,
         ExtraArgs: [1,1,0]
 
+    };
+}
+
+function ChaoticBrushToGPUObj(object: Obj): GPUObj {
+    const vertices: number[] = [];
+    const indices: number[] = [];
+    const w = object.ExtraArgs[0];
+
+    for (let i = 0; i < object.Points.length - 2; i += 2) {
+        const x = object.Points[i];
+        const y = object.Points[i + 1];
+
+        let nx = 0, ny = 0;
+
+        if (i > 0) {
+            const dx1 = x - object.Points[i - 2];
+            const dy1 = y - object.Points[i - 1];
+            const len = Math.hypot(dx1, dy1);
+            if (len > 1e-4) {
+                nx += (-dy1 / len) * w;
+                ny += (dx1 / len) * w;
+            }
+        }
+
+        if (i < object.Points.length - 3) {
+            const dx2 = object.Points[i + 2] - x;
+            const dy2 = object.Points[i + 3] - y;
+            const len = Math.hypot(dx2, dy2);
+            if (len > 1e-4) {
+                nx += (-dy2 / len) * w;
+                ny += (dx2 / len) * w;
+            }
+        }
+
+        const mlen = Math.hypot(nx, ny);
+        if (mlen > 1e-4) {
+            nx = (nx / mlen) * w;
+            ny = (ny / mlen) * w;
+        }
+
+        const hash = ((i * 12345) ^ 987654) | 0;
+        const noise = ((hash % 100) / 100) * 1.2 - 0.6;
+        const texWidth = w * Math.max(0.4, 1 + noise);
+
+        const idx = vertices.length / 9;
+        pushVertex(vertices, x - nx * texWidth / w, y - ny * texWidth / w, object.Color);
+        pushVertex(vertices, x + nx * texWidth / w, y + ny * texWidth / w, object.Color);
+
+        if (i > 0) {
+            indices.push(idx - 2, idx - 1, idx, idx, idx + 1, idx - 1);
+        }
+    }
+
+    return {
+        UsrID: object.UsrID,
+        ObjID: object.ObjID,
+        Vertices: vertices,
+        Indices: indices,
+        Type: object.Type,
+        ImageId: null,
+        ExtraArgs: [1, 1, 0],
+    };
+}
+
+function SprayBrushToGPUObj(object: Obj): GPUObj {
+    const vertices: number[] = [];
+    const indices: number[] = [];
+    const w = object.ExtraArgs[0];
+
+    for (let i = 0; i < object.Points.length - 2; i += 2) {
+        const x = object.Points[i];
+        const y = object.Points[i + 1];
+
+        const hash = ((x * 73856093) ^ (y * 19349663)) | 0;
+        const rand = (hash % 100) / 100;
+
+        for (let j = 0; j < 5; j++) {
+            const angle = (hash + j * 12345) % 360;
+            const dist = ((hash * (j + 1)) % 100) / 100 * w * 2;
+            const cx = x + Math.cos((angle * Math.PI) / 180) * dist;
+            const cy = y + Math.sin((angle * Math.PI) / 180) * dist;
+
+            const radius = w * 0.4;
+            const segments = 6;
+            const centerIdx = vertices.length / 9;
+
+            for (let s = 0; s < segments; s++) {
+                const a = (s / segments) * Math.PI * 2;
+                const vx = cx + Math.cos(a) * radius;
+                const vy = cy + Math.sin(a) * radius;
+                pushVertex(vertices, vx, vy, object.Color);
+            }
+
+            for (let s = 0; s < segments; s++) {
+                indices.push(centerIdx, centerIdx + s, centerIdx + ((s + 1) % segments));
+            }
+        }
+    }
+
+    return {
+        UsrID: object.UsrID,
+        ObjID: object.ObjID,
+        Vertices: vertices,
+        Indices: indices,
+        Type: object.Type,
+        ImageId: null,
+        ExtraArgs: [1, 1, 0],
     };
 }
 
