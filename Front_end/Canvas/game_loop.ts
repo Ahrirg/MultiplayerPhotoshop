@@ -40,9 +40,9 @@ export function initGameLoop(serverIP: string)
 }
 
 // initGameLoop("");
-// const tex = loadTestTexture(glContext!, "../rs7.jpg");
-// imageCache.set("uWu", tex);
-// CreateAndSendImageObject("uWu", 1920, 1080);
+// const tex = loadTestTexture(glContext!, "../arrow.png");
+// imageCache.set("rotarr", tex);
+// CreateAndSendImageObject("rotarr", 1080, 1080);
 
 function gameLoop()
 {
