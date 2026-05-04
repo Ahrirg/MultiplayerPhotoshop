@@ -668,14 +668,13 @@ function UIWireframeToGPUObj(object: Obj): GPUObj {
     const minY = Math.min(y0, y1);
     const maxY = Math.max(y0, y1);
 
-
-    function pushRect(xA: number, yA: number, xB: number, yB: number) {
+    function pushRect(xA: number, yA: number, xB: number, yB: number, color: number[]) {
         const baseIndex = vertices.length / VERTEX_STRIDE;
 
-        pushVertex(vertices, xA, yA, object.Color);
-        pushVertex(vertices, xB, yA, object.Color);
-        pushVertex(vertices, xB, yB, object.Color);
-        pushVertex(vertices, xA, yB, object.Color);
+        pushVertex(vertices, xA, yA, color);
+        pushVertex(vertices, xB, yA, color);
+        pushVertex(vertices, xB, yB, color);
+        pushVertex(vertices, xA, yB, color);
 
         indices.push(
             baseIndex, baseIndex + 1, baseIndex + 2,
@@ -683,37 +682,31 @@ function UIWireframeToGPUObj(object: Obj): GPUObj {
         );
     }
 
+    const white = [1, 1, 1, 1];
+    const offset = 0.01;
 
-    pushRect(minX, maxY - wireframeThickness, maxX, maxY);
-    pushRect(minX, minY, maxX, minY + wireframeThickness);
-    pushRect(minX, minY, minX + wireframeThickness, maxY);
-    pushRect(maxX - wireframeThickness, minY, maxX, maxY);
+    // white outline
+    pushRect(minX - offset, maxY - wireframeThickness - offset, maxX + offset, maxY + offset, white);
+    pushRect(minX - offset, minY - offset, maxX + offset, minY + wireframeThickness + offset, white);
+    pushRect(minX - offset, minY - offset, minX + wireframeThickness + offset, maxY + offset, white);
+    pushRect(maxX - wireframeThickness - offset, minY - offset, maxX + offset, maxY + offset, white);
 
     const half = handleSize / 2;
-    pushRect(
-        minX - half,
-        minY - half,
-        minX + half,
-        minY + half
-    );
-    pushRect(
-        maxX - half,
-        minY - half,
-        maxX + half,
-        minY + half
-    );
-    pushRect(
-        minX - half,
-        maxY - half,
-        minX + half,
-        maxY + half
-    );
-    pushRect(
-        maxX - half,
-        maxY - half,
-        maxX + half,
-        maxY + half
-    );
+    pushRect(minX - half - offset, minY - half - offset, minX + half + offset, minY + half + offset, white);
+    pushRect(maxX - half - offset, minY - half - offset, maxX + half + offset, minY + half + offset, white);
+    pushRect(minX - half - offset, maxY - half - offset, minX + half + offset, maxY + half + offset, white);
+    pushRect(maxX - half - offset, maxY - half - offset, maxX + half + offset, maxY + half + offset, white);
+
+    // black wireframe
+    pushRect(minX, maxY - wireframeThickness, maxX, maxY, object.Color);
+    pushRect(minX, minY, maxX, minY + wireframeThickness, object.Color);
+    pushRect(minX, minY, minX + wireframeThickness, maxY, object.Color);
+    pushRect(maxX - wireframeThickness, minY, maxX, maxY, object.Color);
+
+    pushRect(minX - half, minY - half, minX + half, minY + half, object.Color);
+    pushRect(maxX - half, minY - half, maxX + half, minY + half, object.Color);
+    pushRect(minX - half, maxY - half, minX + half, maxY + half, object.Color);
+    pushRect(maxX - half, maxY - half, maxX + half, maxY + half, object.Color);
 
     return {
         UsrID: object.UsrID,
@@ -728,24 +721,46 @@ function UIWireframeToGPUObj(object: Obj): GPUObj {
 
 export function UIRotationIconToGPUObj(object: Obj): GPUObj
 {
-    // hard-coded icon vertices
     let iconVertices = [0.011588137289060524,-0.03566461936106826,0.0031868316514665415,-0.03736434268156221,-0.005380973324669226,-0.037111927005737635,-0.013667643745468132,-0.034920560053455126,-0.021240233884681232,-0.030904732073325593,-0.027703105884046744,-0.02527425418043616,-0.032718600265229894,-0.018323296556135814,-0.03602467730092258,-0.010415019220548445,-0.03744860755329652,-0.001962598359110397,-0.03691599630337094,0.006592360497538301,-0.03445467038058369,0.014802894614410034,-0.030193224321107184,0.0222400360857464,-0.024354301812381886,0.02851522371000116,-0.017242963441794747,0.033300603774480284,-0.009230748488587223,0.036346159114003296,-0.000736263467273561,0.037492771518077436,0.007796688405665969,0.03668053502751771,0.01592229417302675,0.03395188578367332,0.023216023099118785,0.029449384908027926,0.02929680672017844,0.02340827024793818,0.03384694816311977,0.01614416613031107,0.036628720549532715,0.008036593239939417,0.037496787284025265,-0.000490859833925418,0.036405795316009806,-0.008992667424563137,0.0334127446570638,-0.017024643740233006,0.006952882373436317,-0.021398771616640958,0.0019120989908799207,-0.022418605608937325,-0.00322858399480154,-0.022267156203442582 ,-0.008200586247280879,-0.02095233603207308 ,-0.012744140330808743,-0.018542839243995357 ,-0.01662186353042805,-0.015164552508261694 ,-0.019631160159137934,-0.010993977933681488 ,-0.021614806380553547,-0.0062490115323290685 ,-0.022469164531977913,-0.001177559015466241 ,-0.022149597782022565,0.0039554162985229804 ,-0.02067280222835021,0.008881736768646016 ,-0.018115934592664307,0.013344021651447838 ,-0.014612581087429133,0.017109134226000702 ,-0.010345778065076847,0.019980362264688162 ,-0.005538449093152334,0.021807695468401986 ,-0.0004417580803641394,0.022495662910846467 ,0.004678013043399584,0.022008321016510637 ,0.009553376503816054,0.020371131470203988 ,0.013929613859471265,0.017669630944816758 ,0.01757808403210706,0.014044962148762899 ,0.02030816889787186,0.00968649967818664 ,0.021977232329719626,0.004821955943963646 ,0.022498072370415165,-0.0002945159003552508 ,0.021843477189605887,-0.005395600454737887 ,0.020047646794238275,-0.010214786244139802 ,0.03875878380219401,-0.019748586738670287 ,0.014701607649108064,-0.007490843245702525 ,0.021511430349024266,-0.020910723668469192 ];
     const iconIndices = [0,1,26,0,26,25,1,2,27,1,27,26,2,3,28,2,28,27,3,4,29,3,29,28,4,5,30,4,30,29,5,6,31,5,31,30,6,7,32,6,32,31,7,8,33,7,33,32,8,9,34,8,34,33,9,10,35,9,35,34,10,11,36,10,36,35,11,12,37,11,37,36,12,13,38,12,38,37,13,14,39,13,39,38,14,15,40,14,40,39,15,16,41,15,41,40,16,17,42,16,42,41,17,18,43,17,43,42,18,19,44,18,44,43,19,20,45,19,45,44,20,21,46,20,46,45,21,22,47,21,47,46,22,23,48,22,48,47,23,24,49,23,49,48,50,51,52];
 
     let vertices: number[] = []
+    let indices: number[] = []
 
+    // white circle outline
+    const circleSegments = 32;
+    const circleRadius = 0.05;
+    const circleStart = vertices.length / 9;
+
+    for (let i = 0; i < circleSegments; i++) {
+        const angle = (i / circleSegments) * Math.PI * 2;
+        const x = object.Points[0] + Math.cos(angle) * circleRadius;
+        const y = object.Points[1] + Math.sin(angle) * circleRadius;
+        pushVertex(vertices, x, y, [1, 1, 1, 1]);
+    }
+
+    for (let i = 0; i < circleSegments - 1; i++) {
+        indices.push(circleStart, circleStart + i, circleStart + i + 1);
+    }
+
+    // black icon
+    const iconStartIdx = vertices.length / 9;
     for(let i = 0; i < iconVertices.length; i+=2)
     {
-        let x =iconVertices[i] + object.Points[0];
+        let x = iconVertices[i] + object.Points[0];
         let y = iconVertices[i+1] + object.Points[1];
         pushVertex(vertices, x, y, [0,0,0,1]);
+    }
+
+    for (let idx of iconIndices) {
+        indices.push(idx + iconStartIdx);
     }
 
     return {
         UsrID: object.UsrID,
         ObjID: object.ObjID,
         Vertices: vertices,
-        Indices: iconIndices,
+        Indices: indices,
         Type: object.Type,
         ImageId: null,
         ExtraArgs: [1,1,0]
