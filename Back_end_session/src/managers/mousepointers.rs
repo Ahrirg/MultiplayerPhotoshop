@@ -1,19 +1,27 @@
+use axum::Json;
 use axum::{
-    extract::{State, ws::{Message, Utf8Bytes, WebSocket, WebSocketUpgrade}},
+    extract::{
+        ws::{Message, Utf8Bytes, WebSocket, WebSocketUpgrade},
+        State,
+    },
     response::IntoResponse,
 };
-use tokio::sync::broadcast;
 use std::sync::Arc;
+use tokio::sync::{broadcast, RwLock};
 
 #[derive(Clone)]
 pub struct MousePointerState {
     tx: broadcast::Sender<Utf8Bytes>,
+    pub history: Arc<RwLock<Vec<Utf8Bytes>>>,
 }
 
 impl MousePointerState {
     pub fn new() -> Self {
         let (tx, _) = broadcast::channel(100);
-        Self { tx }
+        Self {
+            tx,
+            history: Arc::new(RwLock::new(Vec::new())),
+        }
     }
 }
 
@@ -32,6 +40,9 @@ async fn handle_socket(mut socket: WebSocket, state: Arc<MousePointerState>) {
     loop {
         tokio::select! {
             Some(Ok(Message::Text(text))) = socket.recv() => {
+                let mut history = state.history.write().await;
+                history.push(text.clone());
+
                 let _ = state.tx.send(text);
             }
 
@@ -46,4 +57,10 @@ async fn handle_socket(mut socket: WebSocket, state: Arc<MousePointerState>) {
     }
 
     println!("Client disconnected");
+}
+
+pub async fn get_history(State(state): State<Arc<MousePointerState>>) -> Json<Vec<String>> {
+    let history = state.history.read().await;
+
+    Json(history.iter().map(|m| m.to_string()).collect())
 }

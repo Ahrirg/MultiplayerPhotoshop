@@ -21,15 +21,16 @@ async fn main() {
     let addr = format!("0.0.0.0:{}", args.port);
 
     let now = SystemTime::now();
-    let game_start = now + Duration::from_secs(30);
-    let game_end = now + Duration::from_secs(1 * 60);
+    let game_start = now + Duration::from_secs(15);
+    let game_end = now + Duration::from_secs(2 * 60);
 
     let chat_queue = managers::messages::ChatQueue::new();
     let mouse_chat = Arc::new(managers::mousepointers::MousePointerState::new());
     let canvas_chat = Arc::new(managers::mousepointers::MousePointerState::new());
     let image_chat = Arc::new(managers::mousepointers::MousePointerState::new());
 
-    let app = Router::new()
+    // base routes
+    let base_router = Router::new()
         .route(
             "/",
             get(|| async { "Hello, World! from session rust server !!" }),
@@ -45,7 +46,10 @@ async fn main() {
                 }))
             }),
         )
-        .route("/info", get(managers::api::read_info))
+        .route("/info", get(managers::api::read_info));
+
+    // messages
+    let message_router = Router::new()
         .route(
             "/messages/get",
             get(managers::messages::handle_get_messages),
@@ -54,22 +58,41 @@ async fn main() {
             "/messages/send",
             post(managers::messages::handle_add_message),
         )
-        .with_state(chat_queue)
+        .with_state(chat_queue);
+
+    // mouse pointers
+    let mouse_router = Router::new()
         .route(
             "/websockets/mousepointers",
             get(managers::mousepointers::ws_handler),
         )
-        .with_state(mouse_chat)
+        .with_state(mouse_chat);
+
+    // canvas
+    let canvas_router = Router::new()
         .route(
             "/websockets/canvas",
             get(managers::mousepointers::ws_handler),
         )
-        .with_state(canvas_chat)
+        .route(
+            "/api/canvas/history",
+            get(managers::mousepointers::get_history),
+        )
+        .with_state(canvas_chat);
+
+    //image
+    let image_router = Router::new()
         .route(
             "/websockets/image",
             get(managers::mousepointers::ws_handler),
         )
-        .with_state(image_chat)
+        .with_state(image_chat);
+
+    let app = base_router
+        .merge(message_router)
+        .merge(mouse_router)
+        .merge(canvas_router)
+        .merge(image_router)
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)
