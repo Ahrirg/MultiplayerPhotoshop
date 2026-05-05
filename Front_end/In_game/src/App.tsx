@@ -173,7 +173,6 @@ function App() {
             sessionIp={serverIp}
           />
         </div>
-        <BottomBar />
       </div>
     </>
   );

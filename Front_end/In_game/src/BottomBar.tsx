@@ -4,7 +4,7 @@ export function BottomBar()
 {
     return(
         <>
-            <div className="bottom">bottom</div>
+            <div className="bottom"></div>
         </>
     )
 }

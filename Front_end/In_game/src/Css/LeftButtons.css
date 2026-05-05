@@ -37,3 +37,7 @@
 .left-btn:active {
   transform: scale(0.95);
 }
+
+.left-btn {
+  transition: none; /* important: let anime.js control it */
+}
