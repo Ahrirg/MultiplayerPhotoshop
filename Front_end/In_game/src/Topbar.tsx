@@ -13,11 +13,13 @@ import { WinScreen } from './WinScreen'
 import { ImageStorage } from "./utils/imageStorage";
 
 import './Css/topBar.css'
+import { RoleInfo } from './Components/Roles'
 
 interface TopBarProps {
   sessionIp: string;
   currentTool: string;
   username: string;
+  role: RoleInfo | null;
   imageStorage: ImageStorage | null;
 }
 
@@ -32,7 +34,7 @@ const toolIcons: Record<string, string> = {
   Arrow: arrowIcon,
 };
 
-export function TopBar({ sessionIp, currentTool, username, imageStorage}: TopBarProps) {
+export function TopBar({ sessionIp, currentTool, username, imageStorage, role}: TopBarProps) {
   const [showPicker, setShowPicker] = useState(false);
   const [activeColor, setActiveColor] = useState('#FF0000');
   const [hue, setHue] = useState(0);
@@ -40,12 +42,6 @@ export function TopBar({ sessionIp, currentTool, username, imageStorage}: TopBar
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [showWinScreen, setShowWinScreen] = useState(false);
   const [time, setTime] = useState(0);
- 
-  const getRandomRole = () => {
-    const roles = ["Imposter", "Player"];
-    return roles[Math.floor(Math.random() * roles.length)];
-  };
-  const [currentRole, setCurrentRole] = useState<string>(() => getRandomRole());
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const handleImportClick = () => {
@@ -136,7 +132,7 @@ export function TopBar({ sessionIp, currentTool, username, imageStorage}: TopBar
 
       <div className='role-indicator'>
         <strong>
-          {currentRole}
+          {role?.title}
         </strong>
       </div>
       <div className='win-screen'>
