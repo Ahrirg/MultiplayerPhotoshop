@@ -160,7 +160,7 @@ function App() {
       />
 
       <div className="container">
-        <TopBar sessionIp={serverIp} currentTool={selectedTool} username={username} imageStorage={imageManagerRef.current}/>
+        <TopBar sessionIp={serverIp} currentTool={selectedTool} username={username} role={userRole} imageStorage={imageManagerRef.current}/>
         
         <div className="middle">
           <LeftBar 
