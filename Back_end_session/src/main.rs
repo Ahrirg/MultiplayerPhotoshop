@@ -1,13 +1,13 @@
 use axum::{
-    routing::{get, post}, 
-    Router,
-    Json
+    routing::{get, post},
+    Json, Router,
 };
 use serde_json::json;
-use tower_http::cors::{CorsLayer, Any};
-use std::time::{Duration, SystemTime, UNIX_EPOCH};mod managers;
-use std::sync::Arc;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use tower_http::cors::{Any, CorsLayer};
+mod managers;
 use clap::Parser;
+use std::sync::Arc;
 
 #[derive(Parser)]
 struct Args {
@@ -22,7 +22,7 @@ async fn main() {
 
     let now = SystemTime::now();
     let game_start = now + Duration::from_secs(30);
-    let game_end = now + Duration::from_secs(10 * 60);
+    let game_end = now + Duration::from_secs(1 * 60);
 
     let chat_queue = managers::messages::ChatQueue::new();
     let mouse_chat = Arc::new(managers::mousepointers::MousePointerState::new());
@@ -30,33 +30,57 @@ async fn main() {
     let image_chat = Arc::new(managers::mousepointers::MousePointerState::new());
 
     let app = Router::new()
-        .route("/", get(|| async { "Hello, World! from session rust server !!" }))
-        .route("/status", get(move || async move {
-            Json(json!({
-                "up": "Server is up",
-                "status": "midgame",
-                "game_start": game_start.duration_since(UNIX_EPOCH).unwrap().as_millis(),
-                "game_end": game_end.duration_since(UNIX_EPOCH).unwrap().as_millis(),
-            }))
-        }))
+        .route(
+            "/",
+            get(|| async { "Hello, World! from session rust server !!" }),
+        )
+        .route(
+            "/status",
+            get(move || async move {
+                Json(json!({
+                    "up": "Server is up",
+                    "status": "midgame",
+                    "game_start": game_start.duration_since(UNIX_EPOCH).unwrap().as_millis(),
+                    "game_end": game_end.duration_since(UNIX_EPOCH).unwrap().as_millis(),
+                }))
+            }),
+        )
         .route("/info", get(managers::api::read_info))
-        .route("/messages/get", get(managers::messages::handle_get_messages))
-        .route("/messages/send", post(managers::messages::handle_add_message))
+        .route(
+            "/messages/get",
+            get(managers::messages::handle_get_messages),
+        )
+        .route(
+            "/messages/send",
+            post(managers::messages::handle_add_message),
+        )
         .with_state(chat_queue)
-        .route("/websockets/mousepointers", get(managers::mousepointers::ws_handler))
+        .route(
+            "/websockets/mousepointers",
+            get(managers::mousepointers::ws_handler),
+        )
         .with_state(mouse_chat)
-        .route("/websockets/canvas", get(managers::mousepointers::ws_handler))
+        .route(
+            "/websockets/canvas",
+            get(managers::mousepointers::ws_handler),
+        )
         .with_state(canvas_chat)
-        .route("/websockets/image", get(managers::mousepointers::ws_handler))
+        .route(
+            "/websockets/image",
+            get(managers::mousepointers::ws_handler),
+        )
         .with_state(image_chat)
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)
-                .allow_methods(Any) 
-                .allow_headers(Any)
+                .allow_methods(Any)
+                .allow_headers(Any),
         );
 
     println!("Server listening on http://localhost:{}/", args.port);
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
-    axum::serve(listener, app).await.unwrap();
+    axum::serve(listener, app)
+        .with_graceful_shutdown(managers::shutdown::shutdown_signal(game_end))
+        .await
+        .unwrap();
 }
