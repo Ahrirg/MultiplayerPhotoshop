@@ -1,11 +1,11 @@
 [project]
-name = "Multiplayer Photoshop DB"
+name = "multiplayer-photoshop-db"
 version = "0.1.0"
 description = "FastAPI backend with image hashing + file storage and SQLite metadata DB"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-  "fastapi[standard,standart]>=0.111",
+  "fastapi[standard]>=0.111",
   "uvicorn[standard]>=0.30",
   "sqlalchemy>=2.0",
   "pydantic>=2.7",
