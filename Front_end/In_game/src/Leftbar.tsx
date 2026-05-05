@@ -1,5 +1,6 @@
 import './Css/Containers.css'
 import './Css/LeftButtons.css'
+import { useToolButton } from "./Effects";
 
 import brushIcon from './assets/paint-brush.svg'
 import squareIcon from './assets/square.svg'
@@ -9,6 +10,11 @@ import pentagonIcon from './assets/pentagon.svg'
 import starIcon from './assets/star.svg'
 import cropIcon from './assets/crop.svg'
 import arrowIcon from './assets/up-arrow.svg'
+import hexagonIcon from './assets/hexagon.svg'
+import octagonIcon from './assets/octagon.svg'
+import semicircleIcon from './assets/semicircle.svg'
+import star4Icon from './assets/star4.svg'
+import cloudIcon from './assets/cloud.svg'
 import { ModifyPlayerState } from '../../Canvas/player_state'
 import { ObjectType } from '../../Canvas/objects'
 
@@ -19,7 +25,20 @@ interface LeftBarProps {
 }
 
 export function LeftBar({ activeTool, setActiveTool }: LeftBarProps) {
-  
+  const cropBtn = useToolButton();
+  const brushBtn = useToolButton();
+  const rectangleBtn = useToolButton();
+  const ellipseBtn = useToolButton();
+  const triangleBtn = useToolButton();
+  const pentagonBtn = useToolButton();
+  const starBtn = useToolButton();
+  const star4Btn = useToolButton();
+  const arrowBtn = useToolButton();
+  const hexagonBtn = useToolButton();
+  const octagonBtn = useToolButton();
+  const semicircleBtn = useToolButton();
+  const cloudBtn = useToolButton();
+
   const handleToolClick = (toolName: string) => {
     if (activeTool === toolName) {
       setActiveTool("");
@@ -27,7 +46,7 @@ export function LeftBar({ activeTool, setActiveTool }: LeftBarProps) {
     } else {
       setActiveTool(toolName);
       if(toolName == "Crop")
-        ModifyPlayerState({selectedTool: ObjectType.Brush});
+        ModifyPlayerState({selectedTool: ObjectType.UIWireframe});
       if(toolName == "Brush")
         ModifyPlayerState({selectedTool: ObjectType.Brush});
       if(toolName == "Rectangle")
@@ -40,74 +59,164 @@ export function LeftBar({ activeTool, setActiveTool }: LeftBarProps) {
         ModifyPlayerState({selectedTool: ObjectType.Pentagon});
       if(toolName == "Star")
         ModifyPlayerState({selectedTool: ObjectType.Star});
+      if(toolName == "Star4")
+        ModifyPlayerState({selectedTool: ObjectType.FPStar});
       if(toolName == "Arrow")
         ModifyPlayerState({selectedTool: ObjectType.Arrow});
+      if(toolName == "Hexagon")
+        ModifyPlayerState({selectedTool: ObjectType.Hexagon});
+      if(toolName == "Octagon")
+        ModifyPlayerState({selectedTool: ObjectType.Octagon});
+      if(toolName == "Semicircle")
+        ModifyPlayerState({selectedTool: ObjectType.Semicircle});
+      if(toolName == "Cloud")
+        ModifyPlayerState({selectedTool: ObjectType.Cloud});
     }
   };
 
   return (
     <div className="left">
       <button 
-        className={`left-btn ${activeTool === 'Crop' ? 'active' : ''}`} 
-        onClick={() => handleToolClick('Crop')}
+        ref={cropBtn.ref}
+        className={`left-btn ${activeTool === 'Crop' ? 'active' : ''}`}
+        onClick={() => { cropBtn.click(); handleToolClick('Crop'); }}
+        onMouseEnter={cropBtn.hoverIn}
+        onMouseLeave={cropBtn.hoverOut}
         title="Crop"
       >
         <img src={cropIcon} alt="Crop" width="35" height="35" />
       </button>
+
       <button 
-        className={`left-btn ${activeTool === 'Brush' ? 'active' : ''}`} 
-        onClick={() => handleToolClick('Brush')}
+        ref={brushBtn.ref}
+        className={`left-btn ${activeTool === 'Brush' ? 'active' : ''}`}
+        onMouseEnter={brushBtn.hoverIn}
+        onMouseLeave={brushBtn.hoverOut}
+        onClick={() => { brushBtn.click(); handleToolClick('Brush'); }}
         title="Brush"
       >
         <img src={brushIcon} alt="Brush" width="35" height="35" />
       </button>
 
       <button 
-        className={`left-btn ${activeTool === 'Rectangle' ? 'active' : ''}`} 
-        onClick={() => handleToolClick('Rectangle')}
+        ref={rectangleBtn.ref}
+        className={`left-btn ${activeTool === 'Rectangle' ? 'active' : ''}`}
+        onMouseEnter={rectangleBtn.hoverIn}
+        onMouseLeave={rectangleBtn.hoverOut}
+        onClick={() => { rectangleBtn.click(); handleToolClick('Rectangle'); }}
         title="Rectangle"
       >
         <img src={squareIcon} alt="Rectangle" width="35" height="35" />
       </button>
 
       <button 
-        className={`left-btn ${activeTool === 'Ellipse' ? 'active' : ''}`} 
-        onClick={() => handleToolClick('Ellipse')}
+        ref={ellipseBtn.ref}
+        className={`left-btn ${activeTool === 'Ellipse' ? 'active' : ''}`}
+        onMouseEnter={ellipseBtn.hoverIn}
+        onMouseLeave={ellipseBtn.hoverOut}
+        onClick={() => { ellipseBtn.click(); handleToolClick('Ellipse'); }}
         title="Ellipse"
       >
-        <img src={ellipseIcon} alt="Ellipse" width="35" height="35" />
+        <img src={ellipseIcon} width="35" height="35"/>
       </button>
 
-      <button 
-        className={`left-btn ${activeTool === 'Triangle' ? 'active' : ''}`} 
-        onClick={() => handleToolClick('Triangle')}
+      <button
+        ref={triangleBtn.ref}
+        className={`left-btn ${activeTool === 'Triangle' ? 'active' : ''}`}
+        onMouseEnter={triangleBtn.hoverIn}
+        onMouseLeave={triangleBtn.hoverOut}
+        onClick={() => { triangleBtn.click(); handleToolClick('Triangle'); }}
         title="Triangle"
       >
-        <img src={triangleIcon} alt="Triangle" width="35" height="35" />
+        <img src={triangleIcon} width="35" height="35"/>
       </button>
 
-      <button 
-        className={`left-btn ${activeTool === 'Pentagon' ? 'active' : ''}`} 
-        onClick={() => handleToolClick('Pentagon')}
+      <button
+        ref={pentagonBtn.ref}
+        className={`left-btn ${activeTool === 'Pentagon' ? 'active' : ''}`}
+        onMouseEnter={pentagonBtn.hoverIn}
+        onMouseLeave={pentagonBtn.hoverOut}
+        onClick={() => { pentagonBtn.click(); handleToolClick('Pentagon'); }}
         title="Pentagon"
       >
-        <img src={pentagonIcon} alt="Pentagon" width="35" height="35" />
+        <img src={pentagonIcon} width="35" height="35"/>
       </button>
 
-      <button 
-        className={`left-btn ${activeTool === 'Star' ? 'active' : ''}`} 
-        onClick={() => handleToolClick('Star')}
+      <button
+        ref={starBtn.ref}
+        className={`left-btn ${activeTool === 'Star' ? 'active' : ''}`}
+        onMouseEnter={starBtn.hoverIn}
+        onMouseLeave={starBtn.hoverOut}
+        onClick={() => { starBtn.click(); handleToolClick('Star'); }}
         title="Star"
       >
-        <img src={starIcon} alt="Star" width="35" height="35" />
+        <img src={starIcon} width="35" height="35"/>
       </button>
 
-      <button 
-        className={`left-btn ${activeTool === 'Arrow' ? 'active' : ''}`} 
-        onClick={() => handleToolClick('Arrow')}
+      <button
+        ref={star4Btn.ref}
+        className={`left-btn ${activeTool === 'Star4' ? 'active' : ''}`}
+        onMouseEnter={star4Btn.hoverIn}
+        onMouseLeave={star4Btn.hoverOut}
+        onClick={() => { star4Btn.click(); handleToolClick('Star4'); }}
+        title="Star4"
+      >
+        <img src={star4Icon} width="35" height="35"/>
+      </button>
+
+      <button
+        ref={arrowBtn.ref}
+        className={`left-btn ${activeTool === 'Arrow' ? 'active' : ''}`}
+        onMouseEnter={arrowBtn.hoverIn}
+        onMouseLeave={arrowBtn.hoverOut}
+        onClick={() => { arrowBtn.click(); handleToolClick('Arrow'); }}
         title="Arrow"
       >
-        <img src={arrowIcon} alt="Arrow" width="35" height="35" />
+        <img src={arrowIcon} width="35" height="35"/>
+      </button>
+
+      <button
+        ref={hexagonBtn.ref}
+        className={`left-btn ${activeTool === 'Hexagon' ? 'active' : ''}`}
+        onMouseEnter={hexagonBtn.hoverIn}
+        onMouseLeave={hexagonBtn.hoverOut}
+        onClick={() => { hexagonBtn.click(); handleToolClick('Hexagon'); }}
+        title="Hexagon"
+      >
+        <img src={hexagonIcon} width="35" height="35"/>
+      </button>
+
+      <button
+        ref={octagonBtn.ref}
+        className={`left-btn ${activeTool === 'Octagon' ? 'active' : ''}`}
+        onMouseEnter={octagonBtn.hoverIn}
+        onMouseLeave={octagonBtn.hoverOut}
+        onClick={() => { octagonBtn.click(); handleToolClick('Octagon'); }}
+        title="Octagon"
+      >
+        <img src={octagonIcon} width="35" height="35"/>
+      </button>
+
+      <button
+        ref={semicircleBtn.ref}
+        className={`left-btn ${activeTool === 'Semicircle' ? 'active' : ''}`}
+        onMouseEnter={semicircleBtn.hoverIn}
+        onMouseLeave={semicircleBtn.hoverOut}
+        onClick={() => { semicircleBtn.click(); handleToolClick('Semicircle'); }}
+        title="Semicircle"
+      >
+        <img src={semicircleIcon} width="35" height="35"/>
+      </button>
+
+      <button
+        ref={cloudBtn.ref}
+        className={`left-btn ${activeTool === 'Cloud' ? 'active' : ''}`}
+        onMouseEnter={cloudBtn.hoverIn}
+        onMouseLeave={cloudBtn.hoverOut}
+        onClick={() => { cloudBtn.click(); handleToolClick('Cloud'); }}
+        title="Cloud"
+      >
+        <img src={cloudIcon} width="35" height="35"/>
       </button>
     </div>
   );

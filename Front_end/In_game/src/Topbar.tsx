@@ -7,6 +7,11 @@ import pentagonIcon from './assets/pentagon.svg'
 import starIcon from './assets/star.svg'
 import cropIcon from './assets/crop.svg'
 import arrowIcon from './assets/up-arrow.svg'
+import hexagonIcon from './assets/hexagon.svg'
+import octagonIcon from './assets/octagon.svg'
+import semicircleIcon from './assets/semicircle.svg'
+import star4Icon from './assets/star4.svg'
+import cloudIcon from './assets/cloud.svg'
 import { ColorPicker } from './Components/ColorPicker'
 import { ModifyPlayerState } from '../../Canvas/player_state'
 import { WinScreen } from './WinScreen'
@@ -24,7 +29,7 @@ interface TopBarProps {
 }
 
 const toolIcons: Record<string, string> = {
-  Crop: brushIcon,
+  Crop: cropIcon,
   Brush: brushIcon,
   Rectangle: squareIcon,
   Ellipse: ellipseIcon,
@@ -32,6 +37,11 @@ const toolIcons: Record<string, string> = {
   Pentagon: pentagonIcon,
   Star: starIcon,
   Arrow: arrowIcon,
+  Star4: star4Icon,
+  Hexagon: hexagonIcon,
+  Octagon: octagonIcon,
+  Semicircle: semicircleIcon,
+  Cloud: cloudIcon
 };
 
 export function TopBar({ sessionIp, currentTool, username, imageStorage, role}: TopBarProps) {
