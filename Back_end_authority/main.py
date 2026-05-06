@@ -118,6 +118,18 @@ class GameSessionCreate(BaseModel):
     players: list[GameSessionPlayerCreate] = Field(default_factory=list)
     photos: list[SessionPhotoCreate] = Field(default_factory=list)
 
+class RegisterRequest(BaseModel):
+    username: str = Field(min_length=3, max_length=50)
+    display_name: str = Field(min_length=1, max_length=80)
+    password: str = Field(min_length=1)
+
+
+class LoginRequest(BaseModel):
+    username: str = Field(min_length=3, max_length=50)
+    password: str = Field(min_length=1)
+
+class WinsRequest(BaseModel):
+    username: str
 
 @app.exception_handler(404)
 def not_found(request, exc):
@@ -418,17 +430,6 @@ def get_ip_from_id(session_id: str, x_api_token: str | None = Header(None)):
 
 _ph = PasswordHasher()
 
-
-class RegisterRequest(BaseModel):
-    username: str = Field(min_length=3, max_length=50)
-    display_name: str = Field(min_length=1, max_length=80)
-    password: str = Field(min_length=1)
-
-
-class LoginRequest(BaseModel):
-    username: str = Field(min_length=3, max_length=50)
-    password: str = Field(min_length=1)
-
 # useriu registracija 
 # Passwordo dar nera DB
 @app.post("/auth/register")
@@ -447,6 +448,12 @@ def login_user(user: LoginRequest):
     if not _ph.verify(db_user["password_hash"], user.password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     return db_user
+
+# Metodas, kuris parodo kiek wins turi useris
+@app.get("/users/{username}/wins")
+def get_user_wins(username: str):
+    user = _db_json("GET", f"/internal/users/{username}")
+    return {"username": username, "wins": user["wins"]}
 
 # Database reikes ideti nauja funkcija kad butu galima redaguoti users
 @app.get("/game/result")
