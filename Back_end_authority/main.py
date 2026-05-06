@@ -609,6 +609,18 @@ def list_game_sessions(x_api_token: str | None = Header(None)):
     return _db_json("GET", "/internal/game-sessions")
 
 
+@app.get("/game/result")
+def record_game_result(username: str, laimejo: bool, x_api_token: str | None = Header(None)):
+    authenticate_external(x_api_token)
+
+    if laimejo:
+        user = _db_json("PATCH", f"/internal/users/{username}/wins")
+    else:
+        user = _db_json("GET", f"/internal/users/{username}")
+
+    return {"username": username, "laimejo": laimejo, "wins": user["wins"]}
+
+
 @app.get("/info", response_class=HTMLResponse)
 def read_info():
     info_path = BASE_DIR / "Info.md"
