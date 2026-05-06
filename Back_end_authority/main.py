@@ -9,6 +9,7 @@ import sys
 import uuid
 from pathlib import Path
 from typing import Any
+from argon2 import PasswordHasher
 
 try:
     import markdown  # type: ignore
@@ -415,6 +416,59 @@ def get_ip_from_id(session_id: str, x_api_token: str | None = Header(None)):
     return {"Server ip": server_url, "Session ID": session_id}
 
 
+_ph = PasswordHasher()
+
+
+class RegisterRequest(BaseModel):
+    username: str = Field(min_length=3, max_length=50)
+    display_name: str = Field(min_length=1, max_length=80)
+    password: str = Field(min_length=1)
+
+
+class LoginRequest(BaseModel):
+    username: str = Field(min_length=3, max_length=50)
+    password: str = Field(min_length=1)
+
+# useriu registracija 
+# Passwordo dar nera DB
+@app.post("/auth/register")
+def register_user(user: RegisterRequest):
+    return _db_json("POST", "/internal/users", json_payload={
+        "username": user.username,
+        "display_name": user.display_name,
+        "password_hash": _ph.hash(user.password),
+    })
+
+# useriu loginas 
+# Passwordo dar nera DB
+@app.post("/auth/login")
+def login_user(user: LoginRequest):
+    db_user = _db_json("GET", f"/internal/users/{user.username}")
+    if not _ph.verify(db_user["password_hash"], user.password):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    return db_user
+
+# Database reikes ideti nauja funkcija kad butu galima redaguoti users
+@app.get("/game/result")
+def record_result(username: str, laimejo: bool, db: Session = Depends(get_database)):
+    result = db.execute(
+        text("SELECT user_id FROM users WHERE name = :name"),
+        {"name": username}
+    ).fetchone()
+
+    if not result:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if laimejo:
+        db.execute(
+            text("UPDATE users SET wins = wins + 1 WHERE name = :name"),
+            {"name": username}
+        )
+        db.commit()
+
+    return {"username": username, "laimejo": laimejo}
+
+
 @app.post("/session/create")
 def create_session(x_api_token: str | None = Header(None)):
     authenticate_external(x_api_token)
@@ -607,18 +661,6 @@ def create_game_session(payload: GameSessionCreate, x_api_token: str | None = He
 def list_game_sessions(x_api_token: str | None = Header(None)):
     authenticate_external(x_api_token)
     return _db_json("GET", "/internal/game-sessions")
-
-
-@app.get("/game/result")
-def record_game_result(username: str, laimejo: bool, x_api_token: str | None = Header(None)):
-    authenticate_external(x_api_token)
-
-    if laimejo:
-        user = _db_json("PATCH", f"/internal/users/{username}/wins")
-    else:
-        user = _db_json("GET", f"/internal/users/{username}")
-
-    return {"username": username, "laimejo": laimejo, "wins": user["wins"]}
 
 
 @app.get("/info", response_class=HTMLResponse)
