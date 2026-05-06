@@ -1,44 +1,14 @@
-import os
-import logging
-from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker
+"""Deprecated.
 
-from dotenv import load_dotenv
-load_dotenv("env/.env")
+Authority no longer owns a local SQLite database.
+All persistent data must go through Back_end_database internal endpoints:
+    Authority -> Back_end_database /internal/...
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+This file is intentionally kept only so older imports fail less confusingly if a teammate opens it.
+Do not use it for new code.
+"""
 
-engine = create_engine(
-    DATABASE_URL,
-    pool_pre_ping=True
+raise RuntimeError(
+    "Back_end_authority/database.py is deprecated. "
+    "Use HTTP calls from authority to Back_end_database /internal endpoints instead."
 )
-
-SessionLocal = sessionmaker(
-    autocommit=False,
-    autoflush=False,
-    bind=engine
-)
-
-def init_db(reset: bool = False):
-    with engine.begin() as eng:
-        eng.execute(text("""
-        CREATE TABLE IF NOT EXISTS sessions (
-            session_id TEXT PRIMARY KEY,
-            host TEXT NOT NULL,
-            port INTEGER NOT NULL,
-            expires_at INTEGER NOT NULL
-        )
-        """))
-
-        if reset:
-            eng.execute(text("DELETE FROM sessions"))
-
-def get_database():
-    db = SessionLocal()
-    try:
-        yield db
-    except Exception as e:
-        logging.error(f"Database error: {e}")
-        raise
-    finally:
-        db.close()

@@ -26,7 +26,7 @@ Set-Location "../../"
 
 Write-Host "=== BUILD SESSION SERVER ==="
 
-Set-Location "./Back_End_session"
+Set-Location "./Back_end_session"
 cargo build --release
 Set-Location "../"
 
@@ -35,6 +35,14 @@ Set-Location "../"
 Write-Host "=== BUILD AUTH SERVER ==="
 
 Set-Location "./Back_end_authority"
+uv sync
+Set-Location "../"
+
+
+
+Write-Host "=== BUILD DB SERVER ==="
+
+Set-Location "./Back_end_database"
 uv sync
 Set-Location "../"
 

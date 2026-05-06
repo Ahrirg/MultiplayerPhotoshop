@@ -1,0 +1,390 @@
+============================
+	Endpointai
+============================
+
+Bendras statusas:
+GET    /status
+
+Frontend puslapiai:
+GET    /
+GET    /game
+
+Sesijos:
+POST   /session/create
+GET    /sessions
+GET    /getallactive
+GET    /join/{session_id}
+GET    /session/validate/{session_id}
+GET    /session/{session_id}
+PATCH  /session/{session_id}
+
+Zaidejai aktyvioje sesijoje:
+POST   /session/{session_id}/join
+PATCH  /session/{session_id}/players/{player_id}
+DELETE /session/{session_id}/players/{player_id}
+
+Users / wins:
+POST   /users
+GET    /users
+
+Themes:
+POST   /themes
+GET    /themes
+
+Images:
+POST   /images
+GET    /images/{image_id}
+
+Current image:
+PATCH  /session/{session_id}/current-image
+GET    /session/{session_id}/current-image
+
+Baigti zaidimai:
+POST   /session/{session_id}/finish
+POST   /game-sessions
+GET    /game-sessions
+
+Info:
+GET    /info
+
+============================
+
+User
+-----
+
+{
+  "id": 1,
+  "username": "tomas",
+  "display_name": "Tomas",
+  "wins": 3
+}
+
+Laukai:
+id            - vartotojo ID DB.
+username      - unikalus prisijungimo / vartotojo vardas.
+display_name  - vardas, kuris rodomas zaidime.
+wins          - kiek kartu vartotojas laimejo.
+
+Svarbu:
+- Dabartine sistema dar nera pilna login sistema su slaptazodziais.
+- Wins padideja tik tada, kai baigiant zaidima nurodomas winner_user_id.
+- Jeigu zaidejas yra guest, jis neturi user_id ir jo wins users lenteleje nedideja.
+
+
+Theme
+-----
+Naudojama zaidimo temoms.
+
+{
+  "id": 1,
+  "name": "Animals",
+  "pack": "default"
+}
+
+Laukai:
+id    - temos ID.
+name  - temos pavadinimas.
+pack  - temos paketas / grupe, gali buti null.
+
+
+Image
+-----
+Naudojama ikeltiems paveiksliukams.
+
+{
+  "id": 5,
+  "sha256": "0f4c2...",
+  "mime_type": "image/png",
+  "size_bytes": 123456
+}
+
+Laukai:
+id          - paveiksliuko ID. Si ID reikia naudoti current_image_id, result_image_id ir photos.image_id.
+sha256      - failo hash.
+mime_type   - failo tipas, pvz. image/png arba image/jpeg.
+size_bytes  - failo dydis baitais.
+
+Svarbu:
+- Frontui dazniausiai svarbiausias laukas yra id.
+- Pats paveiksliukas gaunamas per GET /images/{image_id}.
+- Jeigu reikia rodyti paveiksliuka HTML'e:
+  <img src="http://127.0.0.1:8000/images/5" />
+
+
+Player aktyvioje sesijoje
+-------------------------
+Naudojama live session zaidejams.
+
+{
+  "id": 10,
+  "user_id": null,
+  "guest_name": "Tomas",
+  "display_name": "Tomas",
+  "role": "player",
+  "joined_at": "2026-05-06T15:00:00"
+}
+
+Laukai:
+id            - zaidejo iraso ID session_players lenteleje.
+user_id       - registruoto user ID, jei zaidejas nera guest.
+guest_name    - guest vardas, jei zaidejas nera registruotas user.
+display_name  - rodomas vardas zaidime.
+role          - zaidejo role, pvz. player, host, drawer, winner.
+joined_at     - kada prisijunge.
+
+Svarbu:
+- Turi buti arba user_id, arba guest_name.
+- Negalima siusti abieju kartu.
+- Jeigu jungiasi guest, siusti guest_name.
+- Jeigu jungiasi registruotas vartotojas, siusti user_id.
+
+
+LiveSession
+-----------
+Naudojama aktyvioms / laukiancioms sesijoms.
+
+{
+  "id": 1,
+  "session_id": "session-abc123",
+  "host": "http://127.0.0.1",
+  "port": 52345,
+  "status": "waiting",
+  "current_image_id": 5,
+  "created_at": "2026-05-06T15:00:00",
+  "expires_at": 1778080000,
+  "expires_at_iso": "2026-05-06T16:00:00",
+  "server_url": "http://127.0.0.1:52345",
+  "players": []
+}
+
+Laukai:
+id                - live session DB ID.
+session_id        - pagrindinis sesijos identifikatorius. Ji naudoti URL'uose.
+host              - session serverio host.
+port              - session serverio portas.
+status            - pvz. waiting, playing, finished.
+current_image_id  - dabartinio paveiksliuko ID arba null.
+created_at        - kada sukurta sesija.
+expires_at        - galiojimo laikas epoch sekundemis, palikta front suderinamumui.
+expires_at_iso    - galiojimo laikas ISO formatu.
+server_url        - pilnas Back_end_session serverio URL.
+players           - tos sesijos zaideju sarasas.
+
+Svarbu:
+- Frontui jungiantis prie websocket dazniausiai reikia server_url.
+- Visoms Authority uzklausoms naudoti session_id, ne DB id.
+
+
+GameSession
+-----------
+Naudojama baigto zaidimo istorijai.
+
+{
+  "id": 1,
+  "session_id": "session-abc123",
+  "theme_id": 1,
+  "winner_user_id": 1,
+  "winner_guest_name": null,
+  "result_image_id": 5,
+  "note": "Game finished",
+  "created_at": "2026-05-06T15:30:00",
+  "players": [],
+  "photos": []
+}
+
+Laukai:
+id                 - baigto zaidimo iraso ID.
+session_id         - sesijos identifikatorius.
+theme_id           - temos ID arba null.
+winner_user_id     - laimejusio registruoto user ID.
+winner_guest_name  - laimejusio guest vardas.
+result_image_id    - galutinio paveiksliuko ID.
+note               - papildoma pastaba.
+created_at         - kada irasas sukurtas.
+players            - baigto zaidimo zaidejai.
+photos             - baigto zaidimo nuotraukos.
+
+Svarbu:
+- Nurodyti arba winner_user_id, arba winner_guest_name.
+- Jei norite, kad user wins padidetu, naudoti winner_user_id.
+- Jei naudojamas winner_guest_name, users.wins nedideja.
+
+
+GameSessionPlayer
+-----------------
+Naudojama baigto zaidimo zaideju istorijai.
+
+{
+  "id": 1,
+  "user_id": 1,
+  "guest_name": null,
+  "display_name": "Tomas",
+  "role": "winner"
+}
+
+Laukai:
+id            - iraso ID.
+user_id       - user ID arba null.
+guest_name    - guest vardas arba null.
+display_name  - rodomas vardas.
+role          - role zaidime, pvz. player, host, winner.
+
+
+SessionPhoto
+------------
+Naudojama baigto zaidimo nuotraukoms / rezultatams.
+
+{
+  "id": 1,
+  "image_id": 5,
+  "kind": "result"
+}
+
+Laukai:
+id        - iraso ID.
+image_id  - paveiksliuko ID is images.
+kind      - tipas, pvz. result, canvas, upload.
+
+
+============================
+	request body
+============================
+
+Sukurti user
+------------
+POST /users
+
+{
+  "username": "tomas",
+  "display_name": "Tomas"
+}
+
+
+Prideti zaideja i sesija kaip guest
+-----------------------------------
+POST /session/{session_id}/join
+
+{
+  "guest_name": "Tomas",
+  "display_name": "Tomas",
+  "role": "player"
+}
+
+
+Prideti zaideja i sesija kaip registruota user
+----------------------------------------------
+POST /session/{session_id}/join
+
+{
+  "user_id": 1,
+  "display_name": "Tomas",
+  "role": "player"
+}
+
+
+Atnaujinti zaideja
+------------------
+PATCH /session/{session_id}/players/{player_id}
+
+{
+  "display_name": "Tomas2",
+  "role": "drawer"
+}
+
+
+Atnaujinti session statusa
+--------------------------
+PATCH /session/{session_id}
+
+{
+  "status": "playing"
+}
+
+
+Ikelti paveiksliuka
+-------------------
+POST /images
+
+Content-Type:
+multipart/form-data
+
+Form field:
+file = paveiksliuko failas
+
+Response bus Image struktura:
+{
+  "id": 5,
+  "sha256": "...",
+  "mime_type": "image/png",
+  "size_bytes": 123456
+}
+
+
+Priskirti dabartini paveiksliuka sesijai
+----------------------------------------
+PATCH /session/{session_id}/current-image
+
+{
+  "image_id": 5
+}
+
+
+Nuimti dabartini paveiksliuka nuo sesijos
+-----------------------------------------
+PATCH /session/{session_id}/current-image
+
+{
+  "image_id": null
+}
+
+
+Uzbaigti zaidima su guest laimetoju
+-----------------------------------
+POST /session/{session_id}/finish
+
+{
+  "session_id": "session-abc123",
+  "winner_guest_name": "Tomas",
+  "result_image_id": 5,
+  "note": "Game finished",
+  "players": [
+    {
+      "guest_name": "Tomas",
+      "display_name": "Tomas",
+      "role": "winner"
+    }
+  ],
+  "photos": [
+    {
+      "image_id": 5,
+      "kind": "result"
+    }
+  ]
+}
+
+
+Uzbaigti zaidima su registruotu user laimetoju
+----------------------------------------------
+POST /session/{session_id}/finish
+
+{
+  "session_id": "session-abc123",
+  "winner_user_id": 1,
+  "result_image_id": 5,
+  "note": "Game finished",
+  "players": [
+    {
+      "user_id": 1,
+      "display_name": "Tomas",
+      "role": "winner"
+    }
+  ],
+  "photos": [
+    {
+      "image_id": 5,
+      "kind": "result"
+    }
+  ]
+}
+
+=====================================================

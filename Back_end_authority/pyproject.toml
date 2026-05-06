@@ -1,13 +1,14 @@
 [project]
 name = "back-end-authority"
-version = "0.1.0"
-description = "Add your description here"
-readme = "README.md"
-requires-python = ">=3.13"
+version = "0.2.0"
+description = "Authority API for Multiplayer Photoshop"
+readme = "README_AUTHORITY.md"
+requires-python = ">=3.10"
 dependencies = [
-    "fastapi[standard]>=0.129.0",
-    "markdown>=3.10.2",
-    "requests>=2.32.5",
-    "sqlalchemy>=2.0.48",
-    "uvicorn>=0.41.0",
+    "fastapi[standard]>=0.115.0",
+    "uvicorn>=0.30.0",
+    "requests>=2.32.0",
+    "python-dotenv>=1.0.0",
+    "python-multipart>=0.0.9",
+    "markdown>=3.6",
 ]
