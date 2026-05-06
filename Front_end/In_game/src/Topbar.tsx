@@ -13,6 +13,7 @@ import semicircleIcon from './assets/semicircle.svg'
 import star4Icon from './assets/star4.svg'
 import cloudIcon from './assets/cloud.svg'
 import { ColorPicker } from './Components/ColorPicker'
+import { ImageEdit } from './Components/ImageHueSat'
 import { ModifyPlayerState } from '../../Canvas/player_state'
 import { WinScreen } from './WinScreen'
 import { ImageStorage } from "./utils/imageStorage";
@@ -31,6 +32,8 @@ interface TopBarProps {
 const toolIcons: Record<string, string> = {
   Crop: cropIcon,
   Brush: brushIcon,
+  Spray: brushIcon,
+  Chaotic: brushIcon,
   Rectangle: squareIcon,
   Ellipse: ellipseIcon,
   Triangle: triangleIcon,
@@ -46,9 +49,18 @@ const toolIcons: Record<string, string> = {
 
 export function TopBar({ sessionIp, currentTool, username, imageStorage, role}: TopBarProps) {
   const [showPicker, setShowPicker] = useState(false);
+  const [showEditing, setEditingPicker] = useState(false);
   const [activeColor, setActiveColor] = useState('#FF0000');
   const [hue, setHue] = useState(0);
   const [brightness, setBrightness] = useState(50);
+  const [brightnessImg, setBrightnessImg] = useState(50);
+  const [saturation, setSaturation] = useState(50);
+  const [contrast, setContrast] = useState(50);
+  const [activeImgEdit, setImgEdit] = useState({
+     brightness: 1,
+     contrast: 1,
+     saturation: 1,
+  });
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [showWinScreen, setShowWinScreen] = useState(false);
   const [time, setTime] = useState(0);
@@ -57,6 +69,7 @@ export function TopBar({ sessionIp, currentTool, username, imageStorage, role}: 
   const handleImportClick = () => {
     fileInputRef.current?.click();
   };
+  
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files && files.length > 0) {
@@ -96,6 +109,11 @@ export function TopBar({ sessionIp, currentTool, username, imageStorage, role}: 
     console.log(arrayOf255Values)
     ModifyPlayerState({selectedColor: [arrayOf255Values[0], arrayOf255Values[1], arrayOf255Values[2], arrayOf255Values[3]]})
   }, [activeColor])
+
+  useEffect(() => {
+    console.log(`Changed to: ${activeImgEdit}`)
+    ModifyPlayerState({selectedColor: [brightness, saturation, contrast]})
+  }, [activeImgEdit])
 
   return (
     <div className="top">
@@ -138,8 +156,18 @@ export function TopBar({ sessionIp, currentTool, username, imageStorage, role}: 
             <ColorPicker onColorChange={setActiveColor} buttonRef={buttonRef} visible={showPicker} hue={hue} brightness={brightness} onHueChange={setHue} onBrightnessChange={setBrightness}/>
           )}
         </div>
+        <button 
+          className="top-button"
+          ref={buttonRef}
+          onClick={() => setEditingPicker(p => !p)}
+          >
+          <b>IMAGE EDIT</b>
+        </button>
+        {showEditing && (
+            <ImageEdit onImgChange={setImgEdit} buttonRef={buttonRef} visible={showEditing} brightness={brightnessImg} contrast={contrast} saturation={saturation} 
+            onBrightnessChange={setBrightnessImg} onContrastChange={setContrast} onSaturationChange={setSaturation}/>
+          )}
       </div>
-
       <div className='role-indicator'>
         <strong>
           {role?.title}
