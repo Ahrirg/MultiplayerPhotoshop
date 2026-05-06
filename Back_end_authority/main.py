@@ -1,86 +1,121 @@
-import datetime
-import json
+from __future__ import annotations
+
+import datetime as dt
 import logging
 import os
 import socket
 import subprocess
+import sys
+import uuid
+from pathlib import Path
+from typing import Any
 
-import markdown
+try:
+    import markdown  # type: ignore
+except Exception:  # pragma: no cover - fallback if dependency is missing on Windows
+    markdown = None
+
 import requests
 from dotenv import load_dotenv
-from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi import FastAPI, File, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
-from sqlalchemy import text
-from sqlalchemy.orm import Session
+from pydantic import BaseModel, Field
 
-from database import get_database, init_db
+BASE_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = BASE_DIR.parent
+ENV_PATH = BASE_DIR / "env" / ".env"
 
-if not os.path.exists("env/.env"):
-    open("env/.env", "x")
-load_dotenv("env/.env")
+# Create env/.env automatically so Windows/Linux startup does not fail if the file is missing.
+ENV_PATH.parent.mkdir(parents=True, exist_ok=True)
+ENV_PATH.touch(exist_ok=True)
+load_dotenv(ENV_PATH)
 
-# NOT PERMANENT to create db for session storage
-init_db(reset=True)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logging.getLogger("authority")
 
-# sessions = {}
+SERVICE_PORT = int(os.getenv("SERVICE_PORT", "8000"))
+DATABASE_SERVICE_URL = os.getenv("DATABASE_SERVICE_URL", "http://127.0.0.1:8001").rstrip("/")
+INTERNAL_API_TOKEN = os.getenv("INTERNAL_API_TOKEN", "")
+SESSION_HOST = os.getenv("SESSION_HOST", "http://127.0.0.1").rstrip("/")
+SESSION_BINARY_PATH = os.getenv("SESSION_BINARY_PATH", "").strip()
+SESSION_TTL_SECONDS = int(os.getenv("SESSION_TTL_SECONDS", "3600"))
+REQUIRE_EXTERNAL_API_TOKEN = os.getenv("REQUIRE_EXTERNAL_API_TOKEN", "false").lower() in {"1", "true", "yes"}
 
+app = FastAPI(title="Multiplayer Photoshop Authority", version="0.2")
 
-class UserCreate(BaseModel):
-    name: str
+# Static files are allowed to be absent during backend-only development.
+# This fixes startup on Windows/Linux before the frontend has been built.
+static_dist_dir = BASE_DIR / "static" / "dist"
+static_root_dir = BASE_DIR / "static"
+static_dir = static_dist_dir if static_dist_dir.exists() else static_root_dir
+app.mount("/static", StaticFiles(directory=str(static_dir), check_dir=False), name="static")
+app.mount("/assets", StaticFiles(directory=str(static_dir / "assets"), check_dir=False), name="assets")
 
-
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
-
-INTERNAL_API_TOKEN = os.getenv("INTERNAL_API_TOKEN")
-if not INTERNAL_API_TOKEN:
-    logging.error("Environment variable INTERNAL_API_TOKEN is not set!")
-    raise RuntimeError("INTERNAL_API_TOKEN must be set for secure authentication")
-
-SERVICE_PORT = int(os.getenv("SERVICE_PORT", 3000))
-
-app = FastAPI()
-app.mount("/static", StaticFiles(directory="static/dist"), name="static")
-app.mount("/assets", StaticFiles(directory="static/dist/assets"), name="assets")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # fix this in future
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
-def authenticate(token: str | None):
-    return True  # currently bypassing auth because for testing fck users
-
-    if not token:
-        logging.warning("Authentication failed: No token provided")
-        raise HTTPException(status_code=401, detail="Missing API token")
-    if token != INTERNAL_API_TOKEN:
-        logging.warning("Authentication failed: Invalid token")
-        raise HTTPException(status_code=401, detail="Invalid API token")
-    logging.info("Authentication successful")
-    return True
+class ThemeCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+    pack: str | None = Field(default=None, max_length=120)
 
 
-def validate(sessionId: str, db: Session):
-    result = db.execute(
-        text("SELECT * FROM sessions WHERE session_id = :id"), {"id": sessionId}
-    ).fetchone()
-    if not result:
-        raise HTTPException(status_code=404, detail="Session not found")
+class UserCreate(BaseModel):
+    username: str = Field(min_length=3, max_length=50)
+    display_name: str = Field(min_length=1, max_length=80)
 
-    session = dict(result._mapping)
 
-    if datetime.datetime.now().timestamp() > session["expires_at"]:
-        logging.warning("Session is expired")
-        raise HTTPException(status_code=401, detail="Session is expired")
-    return session
+class PlayerCreate(BaseModel):
+    user_id: int | None = None
+    guest_name: str | None = Field(default=None, min_length=1, max_length=80)
+    display_name: str | None = Field(default=None, min_length=1, max_length=80)
+    role: str = Field(default="player", max_length=30)
+
+
+class PlayerUpdate(BaseModel):
+    display_name: str | None = Field(default=None, min_length=1, max_length=80)
+    role: str | None = Field(default=None, max_length=30)
+
+
+class CurrentImageUpdate(BaseModel):
+    image_id: int | None = None
+
+
+class LiveSessionUpdate(BaseModel):
+    host: str | None = Field(default=None, min_length=1, max_length=120)
+    port: int | None = Field(default=None, ge=1, le=65535)
+    status: str | None = Field(default=None, max_length=30)
+    expires_at: dt.datetime | None = None
+
+
+class GameSessionPlayerCreate(BaseModel):
+    user_id: int | None = None
+    guest_name: str | None = Field(default=None, min_length=1, max_length=80)
+    display_name: str = Field(min_length=1, max_length=80)
+    role: str | None = Field(default=None, max_length=30)
+
+
+class SessionPhotoCreate(BaseModel):
+    image_id: int
+    kind: str | None = Field(default=None, max_length=50)
+
+
+class GameSessionCreate(BaseModel):
+    session_id: str = Field(min_length=1, max_length=80)
+    theme_id: int | None = None
+    winner_user_id: int | None = None
+    winner_guest_name: str | None = Field(default=None, max_length=80)
+    result_image_id: int | None = None
+    note: str | None = Field(default=None, max_length=250)
+    players: list[GameSessionPlayerCreate] = Field(default_factory=list)
+    photos: list[SessionPhotoCreate] = Field(default_factory=list)
 
 
 @app.exception_handler(404)
@@ -88,315 +123,501 @@ def not_found(request, exc):
     return JSONResponse(status_code=404, content={"error": "Route not found"})
 
 
+def authenticate_external(token: str | None) -> None:
+    """Optional public API token check.
+
+    Frontend currently calls Authority without a token, so this is disabled by default.
+    If REQUIRE_EXTERNAL_API_TOKEN=true is set, public write endpoints also require X-API-Token.
+    """
+    if not REQUIRE_EXTERNAL_API_TOKEN:
+        return
+    if not token:
+        raise HTTPException(status_code=401, detail="Missing API token")
+    if token != INTERNAL_API_TOKEN:
+        raise HTTPException(status_code=401, detail="Invalid API token")
+
+
+def _internal_headers() -> dict[str, str]:
+    headers: dict[str, str] = {}
+    if INTERNAL_API_TOKEN:
+        headers["X-API-Token"] = INTERNAL_API_TOKEN
+    return headers
+
+
+def _db_url(path: str) -> str:
+    if not path.startswith("/"):
+        path = "/" + path
+    return f"{DATABASE_SERVICE_URL}{path}"
+
+
+def _db_request(
+    method: str,
+    path: str,
+    *,
+    json_payload: Any | None = None,
+    files: Any | None = None,
+    timeout: float = 8.0,
+    stream: bool = False,
+) -> requests.Response:
+    """Call Back_end_database through its internal API."""
+    try:
+        response = requests.request(
+            method=method,
+            url=_db_url(path),
+            headers=_internal_headers(),
+            json=json_payload,
+            files=files,
+            timeout=timeout,
+            stream=stream,
+        )
+    except requests.exceptions.RequestException as exc:
+        logger.exception("Database service is unreachable")
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "error": "Database service unreachable",
+                "database_url": DATABASE_SERVICE_URL,
+                "message": str(exc),
+            },
+        ) from exc
+
+    if response.status_code >= 400:
+        try:
+            detail = response.json()
+        except ValueError:
+            detail = response.text
+        raise HTTPException(status_code=response.status_code, detail=detail)
+
+    return response
+
+
+def _db_json(method: str, path: str, *, json_payload: Any | None = None, timeout: float = 8.0) -> Any:
+    response = _db_request(method, path, json_payload=json_payload, timeout=timeout)
+    if not response.content:
+        return None
+    return response.json()
+
+
+def _parse_datetime(value: Any) -> dt.datetime | None:
+    if value is None:
+        return None
+    if isinstance(value, dt.datetime):
+        return value
+    if isinstance(value, (int, float)):
+        return dt.datetime.fromtimestamp(float(value), tz=dt.timezone.utc)
+    if isinstance(value, str):
+        normalized = value.replace("Z", "+00:00")
+        parsed = dt.datetime.fromisoformat(normalized)
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=dt.timezone.utc)
+        return parsed
+    return None
+
+
+def _to_epoch_seconds(value: Any) -> int | None:
+    parsed = _parse_datetime(value)
+    if parsed is None:
+        return None
+    return int(parsed.timestamp())
+
+
+def _is_expired(session: dict[str, Any]) -> bool:
+    expires = _parse_datetime(session.get("expires_at"))
+    if expires is None:
+        return False
+    now = dt.datetime.now(dt.timezone.utc)
+    return now > expires.astimezone(dt.timezone.utc)
+
+
+def _normalize_session_for_frontend(session: dict[str, Any]) -> dict[str, Any]:
+    """Keep old frontend compatibility: expires_at is returned as epoch seconds."""
+    result = dict(session)
+    expires_at = session.get("expires_at")
+    epoch = _to_epoch_seconds(expires_at)
+    result["expires_at_iso"] = expires_at
+    result["expires_at"] = epoch
+    result["server_url"] = _session_server_url(session)
+    return result
+
+
+def _session_server_url(session: dict[str, Any]) -> str:
+    host = str(session["host"]).rstrip("/")
+    return f"{host}:{session['port']}"
+
+
+def _get_live_session(session_id: str) -> dict[str, Any]:
+    session = _db_json("GET", f"/internal/live-sessions/{session_id}")
+    if _is_expired(session):
+        raise HTTPException(status_code=401, detail="Session is expired")
+    return session
+
+
+def find_free_port() -> int:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("", 0))
+        return int(s.getsockname()[1])
+
+
+def _candidate_session_binaries() -> list[Path]:
+    if SESSION_BINARY_PATH:
+        return [Path(SESSION_BINARY_PATH)]
+
+    exe_name = "Back_end_session.exe" if sys.platform.startswith("win") else "Back_end_session"
+    other_name = "Back_end_session" if exe_name.endswith(".exe") else "Back_end_session.exe"
+    release_dir = PROJECT_ROOT / "Back_end_session" / "target" / "release"
+    debug_dir = PROJECT_ROOT / "Back_end_session" / "target" / "debug"
+
+    return [
+        release_dir / exe_name,
+        release_dir / other_name,
+        debug_dir / exe_name,
+        debug_dir / other_name,
+    ]
+
+
+def _find_session_binary() -> Path:
+    for candidate in _candidate_session_binaries():
+        expanded = candidate.expanduser().resolve()
+        if expanded.exists() and expanded.is_file():
+            return expanded
+
+    tried = [str(p) for p in _candidate_session_binaries()]
+    raise HTTPException(
+        status_code=500,
+        detail={
+            "error": "Session server executable not found",
+            "tried": tried,
+            "fix": "Build Back_end_session with `cargo build --release` or set SESSION_BINARY_PATH in Back_end_authority/env/.env",
+        },
+    )
+
+
+def start_rust_session(port: int, session_id: str) -> subprocess.Popen[Any]:
+    binary = _find_session_binary()
+    logger.info("Starting session server %s on port %s for %s", binary, port, session_id)
+
+    try:
+        return subprocess.Popen(
+            [str(binary), "--port", str(port)],
+            cwd=str(binary.parent),
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+    except Exception as exc:
+        logger.exception("Failed to start Rust session server")
+        raise HTTPException(status_code=500, detail=f"Failed to start session server: {exc}") from exc
+
+
+def _check_session_server(url: str, timeout: float = 2.0) -> tuple[bool, str]:
+    try:
+        response = requests.get(f"{url}/status", timeout=timeout)
+        if response.status_code == 200:
+            return True, "ok"
+        return False, f"host returned {response.status_code}"
+    except requests.exceptions.RequestException:
+        return False, "host not reachable"
+
+
+def _frontend_file(filename: str) -> FileResponse | JSONResponse:
+    candidates = [
+        BASE_DIR / "static" / "dist" / filename,
+        BASE_DIR / "static" / filename,
+    ]
+    for path in candidates:
+        if path.exists():
+            return FileResponse(path)
+    return JSONResponse(
+        status_code=404,
+        content={
+            "error": f"{filename} not found",
+            "fix": "Build frontend and copy frontpage.html/game.html into Back_end_authority/static or static/dist.",
+        },
+    )
+
+
 @app.get("/")
-def read_root():
-    # return {"Authority server": "Hello world"}
-    return FileResponse("./static/dist/frontpage.html")
+def read_frontpage():
+    return _frontend_file("frontpage.html")
 
 
-# Health status Endpoint
+@app.get("/game")
+def read_game():
+    return _frontend_file("game.html")
+
+
 @app.get("/status")
-def show_server_status(db: Session = Depends(get_database)):
-    status = {"api": "ok", "database": "unknown", "sessions": []}
-
-    # Check database connectivity
-    try:
-        db.execute(text("SELECT 1"))
-        status["database"] = "ok"
-    except Exception:
-        logging.exception("Database health check failed")
-        status["database"] = "down"
+def show_server_status():
+    services: dict[str, Any] = {
+        "api": "ok",
+        "database": "unknown",
+        "database_url": DATABASE_SERVICE_URL,
+        "sessions": [],
+    }
 
     try:
-        result = db.execute(text("SELECT * FROM sessions")).fetchall()
-        now_ts = datetime.datetime.now().timestamp()
-        for r in result:
-            session = dict(r._mapping)
-            session_status = {
-                "session_id": session["session_id"],
-                "host": session["host"],
-                "valid": True,
-                "host_reachable": False,
-                "reason": "",
-            }
+        db_health = requests.get(_db_url("/health"), timeout=3)
+        services["database"] = "ok" if db_health.status_code == 200 else f"http {db_health.status_code}"
+    except requests.exceptions.RequestException:
+        services["database"] = "down"
 
-            if now_ts > session["expires_at"]:
-                session_status["valid"] = False
-                session_status["reason"] = "expired"
-
-            try:
-                resp = requests.get(session["host"], timeout=2)
-                if resp.status_code == 200:
-                    session_status["host_reachable"] = True
-                else:
-                    session_status["reason"] = f"host returned {resp.status_code}"
-            except requests.exceptions.RequestException:
-                session_status["reason"] = "host not reachable"
-
-            status["sessions"].append(session_status)
-
-    except Exception:
-        logging.exception("Failed to fetch sessions")
-        status["sessions"] = "unavailable"
+    if services["database"] == "ok":
+        try:
+            sessions = _db_json("GET", "/internal/live-sessions")
+            now_sessions = []
+            for session in sessions:
+                session_url = _session_server_url(session)
+                reachable, reason = _check_session_server(session_url)
+                now_sessions.append(
+                    {
+                        "session_id": session.get("session_id"),
+                        "host": session.get("host"),
+                        "port": session.get("port"),
+                        "status": session.get("status"),
+                        "valid": not _is_expired(session),
+                        "host_reachable": reachable,
+                        "reason": reason,
+                    }
+                )
+            services["sessions"] = now_sessions
+        except HTTPException:
+            services["sessions"] = "unavailable"
 
     overall = "ok"
-    if status["database"] == "down":
+    if services["database"] == "down":
         overall = "down"
-    elif any(
-        s.get("valid") is False or s.get("host_reachable") is False
-        for s in status["sessions"]
-        if isinstance(status["sessions"], list)
-    ):
+    elif services["database"] != "ok":
         overall = "degraded"
 
     return {
         "status": overall,
-        "services": status,
-        "timestamp": datetime.datetime.utcnow().isoformat(),
+        "services": services,
+        "timestamp": dt.datetime.now(dt.timezone.utc).isoformat(),
     }
 
 
-@app.get("/game")
-def read_root():
-    # return {"Authority server": "Hello world"}
-    return FileResponse("./static/dist/game.html")
+@app.get("/join/{session_id}")
+def get_ip_from_id(session_id: str, x_api_token: str | None = Header(None)):
+    authenticate_external(x_api_token)
+    session = _get_live_session(session_id)
+    server_url = _session_server_url(session)
+    reachable, reason = _check_session_server(server_url)
 
-
-# #Use this for testing
-# @app.get("/join/{sessionId}")
-# def get_ip_from_id(sessionId: str, x_api_token: str | None = Header(None)):
-#     authenticate(x_api_token)
-#     print("here")
-#     # validate(sessionId) # disabling for testing + you still need to return if you not found
-
-#     # HOST = sessions[sessionId]["host"] # THIS NOT DYNAMIC.......... :)
-#     HOST = "http://localhost:3000"
-
-#     try:
-#         print("here1")
-#         r = requests.get(HOST, timeout=2)
-#         print("here2")
-#         logging.info("Server connection successful")
-#         return {
-#             "Server ip": HOST,
-#             "Session ID": sessionId
-#         }
-#     except requests.exceptions.RequestException:
-#         logging.error(f"Join failed: {HOST} not reachable")
-#         raise HTTPException(
-#             status_code=503,
-#             detail={
-#                 "Server ip": "None",
-#                 "Session ID": sessionId,
-#                 "Error": "Server is not reachable"
-#             }
-#         )
-
-
-@app.get("/join/{sessionId}")
-def get_ips_from_ids(
-    sessionId: str,
-    x_api_token: str | None = Header(None),
-    db: Session = Depends(get_database),
-):
-    authenticate(x_api_token)
-
-    session = validate(sessionId, db)
-    HOST = f"{session['host']}:{session['port']}"
-
-    try:
-        requests.get(HOST, timeout=2)
-        return {"Server ip": HOST, "Session ID": sessionId}
-    except requests.exceptions.RequestException:
+    if not reachable:
         raise HTTPException(
             status_code=503,
             detail={
                 "Server ip": "None",
-                "Session ID": sessionId,
-                "Error": "Server is not reachable",
+                "Session ID": session_id,
+                "Error": reason,
             },
         )
 
-
-"""
-@app.post("/test-user")
-def create_user(user: UserCreate, db: Session = Depends(get_database), x_api_token: str | None = Header(None)):
-    authenticate(x_api_token)
-
-    try:
-        db.execute(text(f"INSERT INTO users (name) VALUES (:name)"), {"name": user.name})
-        db.commit()
-        logging.info("Database: user inserted successfully")
-        return {"message": "User created successfully"}
-    except Exception as e:
-        logging.exception(f"Database failed at creating user table: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail={
-                "Error": f"Failed to make user table at Database: {e}"
-            }
-        )
-
-@app.get("/test-user")
-def get_users(db: Session = Depends(get_database), x_api_token: str | None = Header(None)):
-    authenticate(x_api_token)
-
-    try:
-        result = db.execute(text("SELECT * FROM users")).fetchall()
-        users = [dict(r._mapping) for r in result]
-        logging.info(f"Database: fetched {len(users)} users")
-        return {"users": users}
-    except Exception as e:
-        logging.exception("Database failed getting users")
-        raise HTTPException(
-            status_code=500,
-            detail={
-                "Error": f"Failed to get users at Database: {e}"
-            }
-        )
-"""
-
-
-def find_free_port():
-    s = socket.socket()
-    s.bind(("", 0))
-    port = s.getsockname()[1]
-    s.close()
-    return port
-
-
-def start_rust_session(port: int, session_id: str):
-    try:
-        process = subprocess.Popen(
-            ["./Back_end_session", "--port", str(port)],
-            cwd="./../Back_end_session/target/release/",
-        )
-
-        print(f"Started process PID={process.pid}")
-        return process
-
-    except Exception as e:
-        logging.error(f"Failed to start Rust session server: {e}")
-        return None
-
-
-# SESSION_SERVER_URL = "http://localhost:3000"
+    return {"Server ip": server_url, "Session ID": session_id}
 
 
 @app.post("/session/create")
-def create_session(
-    x_api_token: str | None = Header(None), db: Session = Depends(get_database)
-):
-    # authenticate(x_api_token)
-    session_id = f"session-{int(datetime.datetime.now().timestamp())}"
-    host = "http://localhost"
-    port = find_free_port()  # Finds a free port per session
-    expires = int(datetime.datetime.now().timestamp()) + 3600  # 1 hour
+def create_session(x_api_token: str | None = Header(None)):
+    authenticate_external(x_api_token)
 
-    process = start_rust_session(port, session_id)
-    if not process:
-        # pass #FOR TESTING
-        raise HTTPException(
-            status_code=500, detail="Failed to start Rust session server"
-        )
+    session_id = f"session-{uuid.uuid4().hex[:12]}"
+    port = find_free_port()
+    expires_at = dt.datetime.now(dt.timezone.utc) + dt.timedelta(seconds=SESSION_TTL_SECONDS)
 
+    process: subprocess.Popen[Any] | None = None
     try:
-        db.execute(
-            text("""
-                INSERT INTO sessions (session_id, host, port, expires_at)
-                VALUES (:session_id, :host, :port, :expires)
-            """),
-            {"session_id": session_id, "host": host, "port": port, "expires": expires},
-        )
-        db.commit()
-
-        logging.info(f"Session {session_id} created on port {port}")
-
-        return {
+        process = start_rust_session(port, session_id)
+        payload = {
             "session_id": session_id,
-            "host": host,
+            "host": SESSION_HOST,
             "port": port,
-            "expires_at": expires,
+            "status": "waiting",
+            "expires_at": expires_at.isoformat(),
         }
-
-    except Exception as e:
-        logging.exception("Session storage failed")
-        raise HTTPException(status_code=500, detail="Failed to store created session")
-
-
-@app.get("/session/validate/{sessionId}")
-def validate_session(
-    sessionId: str,
-    x_api_token: str | None = Header(None),
-    db: Session = Depends(get_database),
-):
-    authenticate(x_api_token)
-    session = validate(sessionId, db)
-    HOST = session["host"]
-    try:
-        response = requests.get(f"{HOST}/sessions/{sessionId}", timeout=2)
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.HTTPError as e:
-        if response.status_code == 404:
-            return {"valid": False, "reason": "Session not found or expired"}
-        logging.exception("Session validation failed")
-        raise HTTPException(
-            status_code=500,
-            detail={"Error": "Failed to validate session", "Message": str(e)},
-        )
-    except requests.exceptions.RequestException as e:
-        logging.exception("Session server unreachable")
-        raise HTTPException(
-            status_code=503,
-            detail={"Error": "Session server unreachable", "Message": str(e)},
-        )
+        session = _db_json("POST", "/internal/live-sessions", json_payload=payload)
+        logger.info("Session %s created on port %s", session_id, port)
+        return _normalize_session_for_frontend(session)
+    except Exception:
+        if process is not None and process.poll() is None:
+            process.terminate()
+        raise
 
 
-def get_active_sessions():
-    answer = get_ip_from_id("one")  # temp check
-    print(answer)
-    if answer:
-        return [
-            {
-                "name": "session1",
-                "status": "ingame",
-            }
-        ]
-    else:
-        return []
+@app.get("/session/validate/{session_id}")
+def validate_session(session_id: str, x_api_token: str | None = Header(None)):
+    authenticate_external(x_api_token)
+    session = _get_live_session(session_id)
+    server_url = _session_server_url(session)
+    reachable, reason = _check_session_server(server_url)
+    return {
+        "valid": reachable and not _is_expired(session),
+        "reason": reason,
+        "session": _normalize_session_for_frontend(session),
+    }
+
+
+def _get_reachable_sessions() -> list[dict[str, Any]]:
+    sessions = _db_json("GET", "/internal/live-sessions")
+    active: list[dict[str, Any]] = []
+
+    for session in sessions:
+        if session.get("status") == "finished" or _is_expired(session):
+            continue
+
+        server_url = _session_server_url(session)
+        reachable, _reason = _check_session_server(server_url)
+        if reachable:
+            active.append(_normalize_session_for_frontend(session))
+
+    return active
+
+
+@app.get("/sessions")
+def get_sessions():
+    return _get_reachable_sessions()
 
 
 @app.get("/getallactive")
 def get_all_active_server():
-    return len(get_sessions())
+    return len(_get_reachable_sessions())
 
 
-@app.get("/sessions")
-def get_sessions(db: Session = Depends(get_database)):
-    result = db.execute(text("SELECT * FROM sessions")).fetchall()
-    sessions = [dict(r._mapping) for r in result]
-    active_session = []
+# ---- DB data through Authority only ----
+@app.post("/users")
+def create_user(payload: UserCreate, x_api_token: str | None = Header(None)):
+    authenticate_external(x_api_token)
+    return _db_json("POST", "/internal/users", json_payload=payload.model_dump())
 
-    for session in sessions:
-        url = f"{session['host']}:{session['port']}/status"
-        try:
-            response = requests.get(url, timeout=2)
 
-            if response.status_code == 200:
-                active_session.append(session)
-            else:
-                pass  # same as exception DO Stuff
+@app.get("/users")
+def list_users(x_api_token: str | None = Header(None)):
+    authenticate_external(x_api_token)
+    return _db_json("GET", "/internal/users")
 
-        except requests.RequestException:
-            pass  # do some deletion of the db, cuz now we only return available but a lot of junk still left in db
 
-    return active_session
+@app.post("/themes")
+def create_theme(payload: ThemeCreate, x_api_token: str | None = Header(None)):
+    authenticate_external(x_api_token)
+    return _db_json("POST", "/internal/themes", json_payload=payload.model_dump())
+
+
+@app.get("/themes")
+def list_themes(x_api_token: str | None = Header(None)):
+    authenticate_external(x_api_token)
+    return _db_json("GET", "/internal/themes")
+
+
+@app.post("/images")
+async def upload_image(file: UploadFile = File(...), x_api_token: str | None = Header(None)):
+    authenticate_external(x_api_token)
+    content = await file.read()
+    files = {"file": (file.filename or "image.png", content, file.content_type or "application/octet-stream")}
+    return _db_request("POST", "/internal/images", files=files).json()
+
+
+@app.get("/images/{image_id}")
+def get_image(image_id: int, x_api_token: str | None = Header(None)):
+    authenticate_external(x_api_token)
+    db_response = _db_request("GET", f"/internal/images/{image_id}", stream=True)
+    return Response(
+        content=db_response.content,
+        media_type=db_response.headers.get("content-type", "application/octet-stream"),
+        headers={"Cache-Control": "public, max-age=3600"},
+    )
+
+
+@app.get("/session/{session_id}")
+def get_live_session(session_id: str, x_api_token: str | None = Header(None)):
+    authenticate_external(x_api_token)
+    return _normalize_session_for_frontend(_get_live_session(session_id))
+
+
+@app.patch("/session/{session_id}")
+def update_live_session(session_id: str, payload: LiveSessionUpdate, x_api_token: str | None = Header(None)):
+    authenticate_external(x_api_token)
+    data = payload.model_dump(exclude_unset=True)
+    if isinstance(data.get("expires_at"), dt.datetime):
+        data["expires_at"] = data["expires_at"].isoformat()
+    session = _db_json("PATCH", f"/internal/live-sessions/{session_id}", json_payload=data)
+    return _normalize_session_for_frontend(session)
+
+
+@app.post("/session/{session_id}/join")
+def add_player_to_session(session_id: str, payload: PlayerCreate, x_api_token: str | None = Header(None)):
+    authenticate_external(x_api_token)
+    return _db_json(
+        "POST",
+        f"/internal/live-sessions/{session_id}/players",
+        json_payload=payload.model_dump(exclude_none=True),
+    )
+
+
+@app.patch("/session/{session_id}/players/{player_id}")
+def update_player(session_id: str, player_id: int, payload: PlayerUpdate, x_api_token: str | None = Header(None)):
+    authenticate_external(x_api_token)
+    return _db_json(
+        "PATCH",
+        f"/internal/live-sessions/{session_id}/players/{player_id}",
+        json_payload=payload.model_dump(exclude_unset=True),
+    )
+
+
+@app.delete("/session/{session_id}/players/{player_id}")
+def remove_player(session_id: str, player_id: int, x_api_token: str | None = Header(None)):
+    authenticate_external(x_api_token)
+    return _db_json("DELETE", f"/internal/live-sessions/{session_id}/players/{player_id}")
+
+
+@app.patch("/session/{session_id}/current-image")
+def set_current_game_image(session_id: str, payload: CurrentImageUpdate, x_api_token: str | None = Header(None)):
+    authenticate_external(x_api_token)
+    session = _db_json(
+        "PATCH",
+        f"/internal/live-sessions/{session_id}/current-image",
+        json_payload=payload.model_dump(),
+    )
+    return _normalize_session_for_frontend(session)
+
+
+@app.get("/session/{session_id}/current-image")
+def get_current_game_image(session_id: str, x_api_token: str | None = Header(None)):
+    authenticate_external(x_api_token)
+    db_response = _db_request("GET", f"/internal/live-sessions/{session_id}/current-image", stream=True)
+    return Response(
+        content=db_response.content,
+        media_type=db_response.headers.get("content-type", "application/octet-stream"),
+        headers={"Cache-Control": "no-store"},
+    )
+
+
+@app.post("/session/{session_id}/finish")
+def finish_session(session_id: str, payload: GameSessionCreate, x_api_token: str | None = Header(None)):
+    authenticate_external(x_api_token)
+    data = payload.model_dump()
+    data["session_id"] = session_id
+    return _db_json("POST", "/internal/game-sessions", json_payload=data)
+
+
+@app.post("/game-sessions")
+def create_game_session(payload: GameSessionCreate, x_api_token: str | None = Header(None)):
+    authenticate_external(x_api_token)
+    return _db_json("POST", "/internal/game-sessions", json_payload=payload.model_dump())
+
+
+@app.get("/game-sessions")
+def list_game_sessions(x_api_token: str | None = Header(None)):
+    authenticate_external(x_api_token)
+    return _db_json("GET", "/internal/game-sessions")
 
 
 @app.get("/info", response_class=HTMLResponse)
 def read_info():
-    with open("./Info.md", "r", encoding="utf-8") as file:
-        message = file.read()
-    html_content = markdown.markdown(message)
+    info_path = BASE_DIR / "Info.md"
+    if not info_path.exists():
+        raise HTTPException(status_code=404, detail="Info.md not found")
+
+    message = info_path.read_text(encoding="utf-8")
+    if markdown is not None:
+        html_content = markdown.markdown(message)
+    else:
+        html_content = f"<pre>{message}</pre>"
     return f"<html><body>{html_content}</body></html>"
