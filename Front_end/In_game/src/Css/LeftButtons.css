@@ -41,3 +41,28 @@
 .left-btn {
   transition: none; /* important: let anime.js control it */
 }
+
+.brush-submenu {
+  position: absolute;
+  left: 70px; /* pushes it to the right of sidebar */
+  top: 60px;  /* adjust based on brush button position */
+  display: flex;
+  flex-direction: column;
+  background: #2a2a2a;
+  border: 1px solid #444;
+  padding: 5px;
+  border-radius: 6px;
+  z-index: 1000;
+}
+
+.brush-submenu button {
+  background: none;
+  border: none;
+  color: white;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.brush-submenu button:hover {
+  background: #444;
+}

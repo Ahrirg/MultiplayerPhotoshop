@@ -1,7 +1,7 @@
 import './Css/Containers.css'
 import './Css/LeftButtons.css'
 import { useToolButton } from "./Effects";
-
+import { useState } from "react";
 import brushIcon from './assets/paint-brush.svg'
 import squareIcon from './assets/square.svg'
 import ellipseIcon from './assets/ellipse.svg'
@@ -38,6 +38,7 @@ export function LeftBar({ activeTool, setActiveTool }: LeftBarProps) {
   const octagonBtn = useToolButton();
   const semicircleBtn = useToolButton();
   const cloudBtn = useToolButton();
+  const [showBrushMenu, setShowBrushMenu] = useState(false);
 
   const handleToolClick = (toolName: string) => {
     if (activeTool === toolName) {
@@ -71,32 +72,46 @@ export function LeftBar({ activeTool, setActiveTool }: LeftBarProps) {
         ModifyPlayerState({selectedTool: ObjectType.Semicircle});
       if(toolName == "Cloud")
         ModifyPlayerState({selectedTool: ObjectType.Cloud});
+      if(toolName == "Chaotic")
+        ModifyPlayerState({selectedTool: ObjectType.ChaoticBrush});
+      if(toolName == "Spray")
+        ModifyPlayerState({selectedTool: ObjectType.SprayBrush});
     }
   };
 
   return (
     <div className="left">
-      <button 
-        ref={cropBtn.ref}
-        className={`left-btn ${activeTool === 'Crop' ? 'active' : ''}`}
-        onClick={() => { cropBtn.click(); handleToolClick('Crop'); }}
-        onMouseEnter={cropBtn.hoverIn}
-        onMouseLeave={cropBtn.hoverOut}
-        title="Crop"
-      >
-        <img src={cropIcon} alt="Crop" width="35" height="35" />
-      </button>
-
+    <div className="brush-wrapper">
       <button 
         ref={brushBtn.ref}
         className={`left-btn ${activeTool === 'Brush' ? 'active' : ''}`}
         onMouseEnter={brushBtn.hoverIn}
         onMouseLeave={brushBtn.hoverOut}
-        onClick={() => { brushBtn.click(); handleToolClick('Brush'); }}
+        onClick={() => { 
+          brushBtn.click(); 
+          handleToolClick('Brush'); 
+          setShowBrushMenu(false);
+        }}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          setShowBrushMenu(prev => !prev);
+        }}
         title="Brush"
       >
         <img src={brushIcon} alt="Brush" width="35" height="35" />
       </button>
+
+      {showBrushMenu && (
+        <div className="brush-submenu">
+          <button onClick={() => handleToolClick('Chaotic')}>
+            CHAOTIC BRUSH
+          </button>
+          <button onClick={() => handleToolClick('Spray')}>
+            SPRAY PAINT
+          </button>
+        </div>
+      )}
+    </div>
 
       <button 
         ref={rectangleBtn.ref}
