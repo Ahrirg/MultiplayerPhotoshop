@@ -57,6 +57,31 @@ export function ModifyPlayerState(changes: Object)
     Object.assign(State, changes);
 }
 
+
+export function ModifyImageContrast(newContrast: number)
+{
+    if(State.selectedObject?.Type == ObjectType.Image)
+        State.selectedObject.ExtraArgs[0] = newContrast;
+}
+
+export function ModifyImageSaturation(newSaturation: number)
+{
+    if(State.selectedObject?.Type == ObjectType.Image)
+        State.selectedObject.ExtraArgs[1] = newSaturation;
+}
+
+export function ModifyImageBrightness(newBrightness: number)
+{
+    if(State.selectedObject?.Type == ObjectType.Image)
+        State.selectedObject.ExtraArgs[2] = newBrightness;
+}
+
+export function ModifyImageTransparency(newTransparency: number)
+{
+    if(State.selectedObject?.Type == ObjectType.Image)
+        State.selectedObject.ExtraArgs[3] = newTransparency;
+}
+
 export function GetPlayerState()
 {
     return State;
