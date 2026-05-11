@@ -31,7 +31,7 @@ export interface GPUObj
     Vertices: number[],
     Indices: number[],
     ImageId: string | null
-    ExtraArgs: number[] // Currently for images only. 0 - contrast, 1 - saturation, 2 - brightness
+    ExtraArgs: number[] // Currently for images only. 0 - contrast, 1 - saturation, 2 - brightness, 3 - transparency
 }
 
 // Interface for blueprints of objects, compressed version of GPUObj
@@ -49,7 +49,7 @@ export interface Obj
     ExtraArgs: number[]
 }
 
-let objectArray: Obj[] = []//[GenerateObj(0, "", ObjectType.Line, [-1.0,-1.0,-1.0,-1.0], [0,0,0,0], 0, [0.0])];
+let objectArray: Obj[] = [];
 let uiObjArray: Obj[] = [];
 let gpuObjArray: GPUObj[] = [];
 export const imageCache = new Map<string, WebGLTexture | null>();
@@ -454,7 +454,7 @@ function CloudToGPUObj(object: Obj): GPUObj {
         Indices: indices,
         Type: object.Type,
         ImageId: null,
-        ExtraArgs: [1, 1, 0]
+        ExtraArgs: [1, 1, 0, 1]
     };
 }
 
@@ -498,7 +498,7 @@ function HexagonToGPUObj(object: Obj): GPUObj {
         Indices: indices,
         Type: object.Type,
         ImageId: null,
-        ExtraArgs: [1, 1, 0]
+        ExtraArgs: [1, 1, 0, 1]
     };
 }
 
@@ -540,7 +540,7 @@ function OctagonToGPUObj(object: Obj): GPUObj {
         Indices: indices,
         Type: object.Type,
         ImageId: null,
-        ExtraArgs: [1,1,0]
+        ExtraArgs: [1, 1, 0, 1]
     };
 }
 
@@ -592,7 +592,7 @@ function HeartToGPUObj(object: Obj): GPUObj {
         Indices: indices,
         Type: object.Type,
         ImageId: null,
-        ExtraArgs: [1, 1, 0]
+        ExtraArgs: [1, 1, 0, 1]
     };
 }
 
@@ -630,7 +630,7 @@ function SemicircleToGPUObj(object: Obj): GPUObj {
         Indices: indices,
         Type: object.Type,
         ImageId: null,
-        ExtraArgs: [1, 1, 0]
+        ExtraArgs: [1, 1, 0, 1]
     };
 }
 
@@ -715,7 +715,7 @@ function UIWireframeToGPUObj(object: Obj): GPUObj {
         Indices: indices,
         Type: object.Type,
         ImageId: null,
-        ExtraArgs: [1,1,0]
+        ExtraArgs: [1, 1, 0, 1]
     };
 }
 
@@ -763,7 +763,7 @@ export function UIRotationIconToGPUObj(object: Obj): GPUObj
         Indices: indices,
         Type: object.Type,
         ImageId: null,
-        ExtraArgs: [1,1,0]
+        ExtraArgs: [1, 1, 0, 1]
     };
 }
 
@@ -801,7 +801,7 @@ function EllipseToGPUObj(object: Obj): GPUObj {
         Indices: indices,
         Type: object.Type,
         ImageId: null,
-        ExtraArgs: [1,1,0]
+        ExtraArgs: [1, 1, 0, 1]
     };
 
     return gpuObj;
@@ -854,7 +854,7 @@ function ArrowToGPUObj(object: Obj): GPUObj {
         Indices: indices,
         Type: object.Type,
         ImageId: null,
-        ExtraArgs: [1,1,0]
+        ExtraArgs: [1, 1, 0, 1]
 
     };
 
@@ -906,7 +906,7 @@ function PentagonToGPUObj(object: Obj): GPUObj
         Indices: indices,
         Type: object.Type,
         ImageId: null,
-        ExtraArgs: [1,1,0]
+        ExtraArgs: [1, 1, 0, 1]
 
     };
 
@@ -955,7 +955,7 @@ function FPStarToGPUObj(object: Obj): GPUObj {
         Indices: indices,
         Type: object.Type,
         ImageId: null,
-        ExtraArgs: [1, 1, 0]
+        ExtraArgs: [1, 1, 0, 1]
     };
 }
 
@@ -1008,7 +1008,7 @@ function StarToGPUObj(object: Obj): GPUObj {
         Indices: indices,
         Type: object.Type,
         ImageId: null,
-        ExtraArgs: [1,1,0]
+        ExtraArgs: [1, 1, 0, 1]
 
     };
 
@@ -1033,7 +1033,7 @@ function TriangleToGPUObj(object: Obj): GPUObj
         Indices: indices,
         Type: object.Type,
         ImageId: null,
-        ExtraArgs: [1,1,0]
+        ExtraArgs: [1, 1, 0, 1]
 
     };
 
@@ -1063,7 +1063,7 @@ function RectangleToGPUObj(object: Obj): GPUObj
         Indices: indices,
         Type: object.Type,
         ImageId: null,
-        ExtraArgs: [1,1,0]
+        ExtraArgs: [1, 1, 0, 1]
 
     }
 
@@ -1105,7 +1105,7 @@ function LineToGPUObj(object: Obj): GPUObj
         Indices: indices,
         Type: object.Type,
         ImageId: null,
-        ExtraArgs: [1,1,0]
+        ExtraArgs: [1, 1, 0, 1]
 
     }
 
@@ -1170,7 +1170,7 @@ function BrushToGPUObj(object: Obj): GPUObj {
         Indices: indices,
         Type: object.Type,
         ImageId: null,
-        ExtraArgs: [1,1,0]
+        ExtraArgs: [1, 1, 0, 1]
 
     };
 }
@@ -1232,7 +1232,7 @@ function ChaoticBrushToGPUObj(object: Obj): GPUObj {
         Indices: indices,
         Type: object.Type,
         ImageId: null,
-        ExtraArgs: [1, 1, 0],
+        ExtraArgs: [1, 1, 0, 1],
     };
 }
 
@@ -1278,7 +1278,7 @@ function SprayBrushToGPUObj(object: Obj): GPUObj {
         Indices: indices,
         Type: object.Type,
         ImageId: null,
-        ExtraArgs: [1, 1, 0],
+        ExtraArgs: [1, 1, 0, 1],
     };
 }
 
@@ -1314,6 +1314,7 @@ export function renderGPUObjects(
     uSaturation: WebGLUniformLocation,
     uBrightness: WebGLUniformLocation,
     uContrast: WebGLUniformLocation,
+    uTransparency: WebGLUniformLocation
 ) {
     gl.useProgram(program);
     gl.activeTexture(gl.TEXTURE0);
@@ -1324,6 +1325,7 @@ export function renderGPUObjects(
         gl.uniform1f(uContrast, obj.ExtraArgs[0]);
         gl.uniform1f(uSaturation, obj.ExtraArgs[1]);
         gl.uniform1f(uBrightness, obj.ExtraArgs[2]);
+        gl.uniform1f(uTransparency, obj.ExtraArgs[3]);
         // Bind texture if exists
         if (obj.ImageId) {
             const texture = imageCache.get(obj.ImageId);

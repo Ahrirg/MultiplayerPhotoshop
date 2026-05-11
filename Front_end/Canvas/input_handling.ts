@@ -117,7 +117,7 @@ export function CreateAndSendImageObject(imageId: string, width: number, height:
 
     let imageObj = GenerateObj(GetPlayerState().userID, "", ObjectType.Image, corners, [1,1,1,1], imageId, []);
     imageObj.PivotPoint = pivotPoint;
-    imageObj.ExtraArgs = [1,1,0]
+    imageObj.ExtraArgs = [1,1,0,1]
     AddObject(imageObj);
     existingIds.add(imageObj.ObjID)
     sendObjectCreationMessage(imageObj); //not needed we create it on react side and send data

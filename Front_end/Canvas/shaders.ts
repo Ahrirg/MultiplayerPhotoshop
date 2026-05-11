@@ -33,6 +33,7 @@ export const fragmentShaderSource = `
     uniform float u_contrast;     // 1.0 = normal
     uniform float u_saturation;   // 1.0 = normal
     uniform float u_brightness;   // 0.0 = normal
+    uniform float u_transparency; // 1.0 = normal
 
     void main() {
         vec4 texColor = texture2D(u_texture, v_uv);
@@ -45,6 +46,10 @@ export const fragmentShaderSource = `
         texColor.rgb = mix(gray, texColor.rgb, u_saturation);
         texColor.rgb = clamp(texColor.rgb, 0.0, 1.0);
 
-        gl_FragColor = mix(v_color, texColor, v_useTexture);
+        vec4 basecolor = mix(v_color, texColor, v_useTexture);
+        basecolor.a *= u_transparency;
+
+        gl_FragColor = basecolor;
+
     }
 `;

@@ -1,8 +1,8 @@
-import { compileWebGLShader, createWebGLContext, createWebGLProgram, setupWebGLBuffers, updateWebGLBuffers, setupWebGLVertexLayout, loadTestTexture, uTexture, uSaturation, uBrightness, uContrast } from "./renderer.js";
+import { compileWebGLShader, createWebGLContext, createWebGLProgram, setupWebGLBuffers, updateWebGLBuffers, setupWebGLVertexLayout, loadTestTexture, uTexture, uSaturation, uBrightness, uContrast, uTransparency } from "./renderer.js";
 import { vertexShaderSource, fragmentShaderSource } from "./shaders.js";
 import { AddObject, AddObjToGPUArray, GenerateObj, generateObjectId, GetGPUArray, GetObjArray, GetUIObjArray, GPUObj, imageCache, ObjectType, ObjToGPUObjArray, renderGPUObjects, ResetObjInGPUArray } from "./objects.js";
 import { CreateAndSendImageObject, initInputHandling } from "./input_handling.js";
-import { GetPlayerState, HandleObjectModification, HandleUIObjects } from "./player_state.js";
+import { GetPlayerState, HandleObjectModification, HandleUIObjects, ModifyImageTransparency } from "./player_state.js";
 import { initWebsocketWrapper } from "./communication.js";
 
 let vertexBuffer: WebGLBuffer
@@ -40,6 +40,7 @@ export function initGameLoop(serverIP: string)
 }
 
 // initGameLoop("");
+// AddObject(GenerateObj(0, "", ObjectType.Line, [-1.0,-1.0,1.0,1.0], [0,0,0,1], null, [1,1,0,1]));
 // const tex = loadTestTexture(glContext!, "../arrow.png");
 // imageCache.set("rotarr", tex);
 // CreateAndSendImageObject("rotarr", 1080, 1080);
@@ -50,7 +51,7 @@ function gameLoop()
     HandleUIObjects();
 
     const combinedGPUObjectArray = [... GetGPUArray(), ... ObjToGPUObjArray(GetUIObjArray())];
-    renderGPUObjects(glContext, glProgram, vertexBuffer, indexBuffer, combinedGPUObjectArray, uTexture!, uSaturation!, uBrightness!, uContrast!);
+    renderGPUObjects(glContext, glProgram, vertexBuffer, indexBuffer, combinedGPUObjectArray, uTexture!, uSaturation!, uBrightness!, uContrast!, uTransparency!);
 
     requestAnimationFrame(gameLoop);
 }

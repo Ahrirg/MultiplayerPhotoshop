@@ -8,6 +8,7 @@ export let uContrast: WebGLUniformLocation | null;
 export let uSaturation: WebGLUniformLocation | null;
 export let uBrightness: WebGLUniformLocation | null; 
 export let uTexture: WebGLUniformLocation | null;
+export let uTransparency: WebGLUniformLocation | null;
 
 
 //
@@ -21,6 +22,10 @@ export function createWebGLContext(canvasID: string): WebGLRenderingContext
     if (!gl) {
         alert("WebGL not supported");
     }
+
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
     return gl;
 }
 
@@ -51,6 +56,7 @@ export function createWebGLProgram(gl: WebGLRenderingContext, fragShader: WebGLS
     uSaturation = gl.getUniformLocation(program, "u_saturation");
     uBrightness = gl.getUniformLocation(program, "u_brightness");
     uTexture = gl.getUniformLocation(program, "u_texture");
+    uTransparency = gl.getUniformLocation(program, "u_transparency");
 
     if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
         throw new Error(gl.getProgramInfoLog(program)!);
