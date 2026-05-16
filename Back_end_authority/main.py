@@ -7,6 +7,7 @@ import socket
 import subprocess
 import sys
 import uuid
+from enum import Enum
 from pathlib import Path
 from typing import Any
 from argon2 import PasswordHasher
@@ -63,6 +64,13 @@ app.add_middleware(
 )
 
 
+class Access(str, Enum):
+    """Player access level. str-Enum -> serialises as plain string; backward-compatible with DB/frontend."""
+    GUEST = "guest"
+    PLAYER = "player"
+    MODERATOR = "moderator"
+
+
 class ThemeCreate(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     pack: str | None = Field(default=None, max_length=120)
@@ -77,7 +85,7 @@ class PlayerCreate(BaseModel):
     user_id: int | None = None
     guest_name: str | None = Field(default=None, min_length=1, max_length=80)
     display_name: str | None = Field(default=None, min_length=1, max_length=80)
-    role: str = Field(default="player", max_length=30)
+    access: Access = Access.PLAYER
 
 
 class PlayerUpdate(BaseModel):
@@ -100,7 +108,7 @@ class GameSessionPlayerCreate(BaseModel):
     user_id: int | None = None
     guest_name: str | None = Field(default=None, min_length=1, max_length=80)
     display_name: str = Field(min_length=1, max_length=80)
-    role: str | None = Field(default=None, max_length=30)
+    access: Access | None = None
 
 
 class SessionPhotoCreate(BaseModel):
@@ -429,8 +437,13 @@ def get_ip_from_id(session_id: str, x_api_token: str | None = Header(None)):
 
 
 _ph = PasswordHasher()
+def require_moderator(session_access: str | Access) -> None:
+    """Raise 403 if the caller did not authenticate via /auth/moderator/login."""
+    if Access(session_access) != Access.MODERATOR:
+        raise HTTPException(status_code=403, detail="Moderator login required")
 
-# useriu registracija 
+
+# useriu registracija
 # Passwordo dar nera DB
 @app.post("/auth/register")
 def register_user(user: RegisterRequest):
@@ -440,14 +453,48 @@ def register_user(user: RegisterRequest):
         "password_hash": _ph.hash(user.password),
     })
 
-# useriu loginas 
-# Passwordo dar nera DB
+#useriu login
+#jeigu useris turi moderator access jis prisijungs kaip moderator
 @app.post("/auth/login")
 def login_user(user: LoginRequest):
     db_user = _db_json("GET", f"/internal/users/{user.username}")
     if not _ph.verify(db_user["password_hash"], user.password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    return db_user
+
+    access = Access(db_user.get("access", Access.PLAYER))
+
+    if access == Access.MODERATOR:
+        return {
+            "id": db_user["id"],
+            "username": db_user["username"],
+            "display_name": db_user["display_name"],
+            "wins": db_user["wins"],
+            "created_at": db_user["created_at"],
+            "access": Access.MODERATOR,
+        }
+
+    return {
+        "id": db_user["id"],
+        "username": db_user["username"],
+        "display_name": db_user["display_name"],
+        "wins": db_user["wins"],
+        "created_at": db_user["created_at"],
+        "access": access,
+    }
+
+# Jeigu useris nenori registerintis, gali zaist kaip guest, bet netures skinu ir winu counterio
+# taip pat neture db iraso
+@app.post("/auth/guest")
+def login_as_guest():
+    full_id = uuid.uuid4().hex
+    guest_name = f"guest_{full_id}"
+    display_name = f"Guest #{full_id[:4].upper()}"
+    return {
+        "guest_name": guest_name,
+        "display_name": display_name,
+        "access": Access.GUEST,
+    }
+
 
 # Metodas, kuris parodo kiek wins turi useris
 @app.get("/users/{username}/wins")
@@ -455,25 +502,15 @@ def get_user_wins(username: str):
     user = _db_json("GET", f"/internal/users/{username}")
     return {"username": username, "wins": user["wins"]}
 
-# Database reikes ideti nauja funkcija kad butu galima redaguoti users
-@app.get("/game/result")
-def record_result(username: str, laimejo: bool, db: Session = Depends(get_database)):
-    result = db.execute(
-        text("SELECT user_id FROM users WHERE name = :name"),
-        {"name": username}
-    ).fetchone()
-
-    if not result:
-        raise HTTPException(status_code=404, detail="User not found")
+# Kai žaidimas pasibaigia pažiūri ar žaidėjas laimėjo ir pakelia wins counteri DB
+@app.post("/game/result")
+def record_result(username: str, laimejo: bool):
+    user = _db_json("GET", f"/internal/users/{username}")
 
     if laimejo:
-        db.execute(
-            text("UPDATE users SET wins = wins + 1 WHERE name = :name"),
-            {"name": username}
-        )
-        db.commit()
+        _db_json("POST", f"/internal/users/{username}/wins")
 
-    return {"username": username, "laimejo": laimejo}
+    return {"username": username, "laimejo": laimejo, "wins": user["wins"]}
 
 
 @app.post("/session/create")
