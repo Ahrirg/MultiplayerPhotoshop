@@ -6,10 +6,14 @@ import os
 import socket
 import subprocess
 import sys
+import random
 import uuid
+from enum import Enum
 from pathlib import Path
 from typing import Any
 from argon2 import PasswordHasher
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
 
 try:
     import markdown  # type: ignore
@@ -43,6 +47,13 @@ SESSION_HOST = os.getenv("SESSION_HOST", "http://127.0.0.1").rstrip("/")
 SESSION_BINARY_PATH = os.getenv("SESSION_BINARY_PATH", "").strip()
 SESSION_TTL_SECONDS = int(os.getenv("SESSION_TTL_SECONDS", "3600"))
 REQUIRE_EXTERNAL_API_TOKEN = os.getenv("REQUIRE_EXTERNAL_API_TOKEN", "false").lower() in {"1", "true", "yes"}
+SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY", "")
+SENDGRID_FROM_EMAIL = os.getenv("SENDGRID_FROM_EMAIL", "")
+VERIFICATION_CODE_TTL_SECONDS = int(os.getenv("VERIFICATION_CODE_TTL_SECONDS", "300"))  # 5 min
+RESEND_COOLDOWN_SECONDS = int(os.getenv("RESEND_COOLDOWN_SECONDS", "60"))  # 1 min cooldown
+
+# in-memory store: username -> {code, expires_at, last_sent}
+_verification_store: dict[str, dict] = {}
 
 app = FastAPI(title="Multiplayer Photoshop Authority", version="0.2")
 
@@ -63,6 +74,13 @@ app.add_middleware(
 )
 
 
+class Access(str, Enum):
+    """Player access level. str-Enum -> serialises as plain string; backward-compatible with DB/frontend."""
+    GUEST = "guest"
+    PLAYER = "player"
+    MODERATOR = "moderator"
+
+
 class ThemeCreate(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     pack: str | None = Field(default=None, max_length=120)
@@ -77,7 +95,7 @@ class PlayerCreate(BaseModel):
     user_id: int | None = None
     guest_name: str | None = Field(default=None, min_length=1, max_length=80)
     display_name: str | None = Field(default=None, min_length=1, max_length=80)
-    role: str = Field(default="player", max_length=30)
+    access: Access = Access.PLAYER
 
 
 class PlayerUpdate(BaseModel):
@@ -100,7 +118,7 @@ class GameSessionPlayerCreate(BaseModel):
     user_id: int | None = None
     guest_name: str | None = Field(default=None, min_length=1, max_length=80)
     display_name: str = Field(min_length=1, max_length=80)
-    role: str | None = Field(default=None, max_length=30)
+    access: Access | None = None
 
 
 class SessionPhotoCreate(BaseModel):
@@ -122,6 +140,12 @@ class RegisterRequest(BaseModel):
     username: str = Field(min_length=3, max_length=50)
     display_name: str = Field(min_length=1, max_length=80)
     password: str = Field(min_length=1)
+    email: str = Field(min_length=5, max_length=120)
+
+
+class VerifyEmailRequest(BaseModel):
+    username: str = Field(min_length=3, max_length=50)
+    code: str = Field(min_length=6, max_length=6)
 
 
 class LoginRequest(BaseModel):
@@ -430,24 +454,134 @@ def get_ip_from_id(session_id: str, x_api_token: str | None = Header(None)):
 
 _ph = PasswordHasher()
 
-# useriu registracija 
-# Passwordo dar nera DB
+# verifikacija userio per gmaila
+def _send_verification_email(to_email: str, username: str, code: str) -> None:
+    message = Mail(
+        from_email=SENDGRID_FROM_EMAIL,
+        to_emails=to_email,
+        subject="Multiplayer Photoshop — verify your email",
+        plain_text_content=f"Hi {username},\n\nYour verification code is: {code}\n\nExpires in {VERIFICATION_CODE_TTL_SECONDS // 60} minutes.",
+    )
+    SendGridAPIClient(SENDGRID_API_KEY).send(message)
+
+# sukuria coda ir storina ji in memory
+def _generate_and_store_code(username: str) -> str:
+    code = f"{random.randint(0, 999999):06d}"
+    _verification_store[username] = {
+        "code": code,
+        "expires_at": dt.datetime.now(dt.timezone.utc) + dt.timedelta(seconds=VERIFICATION_CODE_TTL_SECONDS),
+        "last_sent": dt.datetime.now(dt.timezone.utc),
+    }
+    return code
+
+
+def require_moderator(session_access: str | Access) -> None:
+    if Access(session_access) != Access.MODERATOR:
+        raise HTTPException(status_code=403, detail="Moderator login required")
+
+
+# useriu registracija
+# useris turi verifikuotis jeigu nori prisijugti
 @app.post("/auth/register")
 def register_user(user: RegisterRequest):
-    return _db_json("POST", "/internal/users", json_payload={
+    _db_json("POST", "/internal/users", json_payload={
         "username": user.username,
         "display_name": user.display_name,
         "password_hash": _ph.hash(user.password),
+        "email": user.email,
     })
+    code = _generate_and_store_code(user.username)
+    _send_verification_email(user.email, user.username, code)
+    return {"detail": "Registration successful. Check your email for a verification code."}
 
-# useriu loginas 
-# Passwordo dar nera DB
+
+# šiam endpointui payload yra 
+# {
+# "username": "žmogaus vardas", 
+# "code": "verifikacijos kodas (6 skaičiai)"
+# }
+@app.post("/auth/verify-email")
+def verify_email(payload: VerifyEmailRequest):
+    entry = _verification_store.get(payload.username)
+
+    if not entry:
+        raise HTTPException(status_code=404, detail="No pending verification for this user")
+
+    if dt.datetime.now(dt.timezone.utc) > entry["expires_at"]:
+        _verification_store.pop(payload.username, None)
+        raise HTTPException(status_code=400, detail="Verification code expired")
+
+    if payload.code != entry["code"]:
+        raise HTTPException(status_code=400, detail="Invalid verification code")
+
+    _verification_store.pop(payload.username, None)
+    _db_json("PATCH", f"/internal/users/{payload.username}", json_payload={"email_verified": True})
+    return {"detail": "Email verified. You can now log in."}
+
+
+@app.post("/auth/resend-verification")
+def resend_verification(username: str):
+    db_user = _db_json("GET", f"/internal/users/{username}")
+
+    if db_user.get("email_verified"):
+        raise HTTPException(status_code=400, detail="Email already verified")
+
+    entry = _verification_store.get(username)
+    if entry:
+        elapsed = (dt.datetime.now(dt.timezone.utc) - entry["last_sent"]).total_seconds()
+        if elapsed < RESEND_COOLDOWN_SECONDS:
+            wait = int(RESEND_COOLDOWN_SECONDS - elapsed)
+            raise HTTPException(status_code=429, detail=f"Wait {wait}s before requesting a new code")
+
+    code = _generate_and_store_code(username)
+    _send_verification_email(db_user["email"], username, code)
+    return {"detail": "Verification code resent."}
+
+#useriu login
+#jeigu useris turi moderator access jis prisijungs kaip moderator
 @app.post("/auth/login")
 def login_user(user: LoginRequest):
     db_user = _db_json("GET", f"/internal/users/{user.username}")
     if not _ph.verify(db_user["password_hash"], user.password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    return db_user
+
+    if not db_user.get("email_verified", False):
+        raise HTTPException(status_code=403, detail="Email not verified. Check your inbox.")
+
+    access = Access(db_user.get("access", Access.PLAYER))
+
+    if access == Access.MODERATOR:
+        return {
+            "id": db_user["id"],
+            "username": db_user["username"],
+            "display_name": db_user["display_name"],
+            "wins": db_user["wins"],
+            "created_at": db_user["created_at"],
+            "access": Access.MODERATOR,
+        }
+
+    return {
+        "id": db_user["id"],
+        "username": db_user["username"],
+        "display_name": db_user["display_name"],
+        "wins": db_user["wins"],
+        "created_at": db_user["created_at"],
+        "access": access,
+    }
+
+# Jeigu useris nenori registerintis, gali zaist kaip guest, bet netures skinu ir winu counterio
+# taip pat neture db iraso
+@app.post("/auth/guest")
+def login_as_guest():
+    full_id = uuid.uuid4().hex
+    guest_name = f"guest_{full_id}"
+    display_name = f"Guest #{full_id[:4].upper()}"
+    return {
+        "guest_name": guest_name,
+        "display_name": display_name,
+        "access": Access.GUEST,
+    }
+
 
 # Metodas, kuris parodo kiek wins turi useris
 @app.get("/users/{username}/wins")
@@ -455,25 +589,15 @@ def get_user_wins(username: str):
     user = _db_json("GET", f"/internal/users/{username}")
     return {"username": username, "wins": user["wins"]}
 
-# Database reikes ideti nauja funkcija kad butu galima redaguoti users
-@app.get("/game/result")
-def record_result(username: str, laimejo: bool, db: Session = Depends(get_database)):
-    result = db.execute(
-        text("SELECT user_id FROM users WHERE name = :name"),
-        {"name": username}
-    ).fetchone()
-
-    if not result:
-        raise HTTPException(status_code=404, detail="User not found")
+# Kai žaidimas pasibaigia pažiūri ar žaidėjas laimėjo ir pakelia wins counteri DB
+@app.post("/game/result")
+def record_result(username: str, laimejo: bool):
+    user = _db_json("GET", f"/internal/users/{username}")
 
     if laimejo:
-        db.execute(
-            text("UPDATE users SET wins = wins + 1 WHERE name = :name"),
-            {"name": username}
-        )
-        db.commit()
+        _db_json("POST", f"/internal/users/{username}/wins")
 
-    return {"username": username, "laimejo": laimejo}
+    return {"username": username, "laimejo": laimejo, "wins": user["wins"]}
 
 
 @app.post("/session/create")
