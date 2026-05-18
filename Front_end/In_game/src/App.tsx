@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import {TopBar} from './Topbar';
-import {RightBar} from './Rightbar';
-import {LeftBar} from './Leftbar';
-import {BottomBar} from './BottomBar';
-import {Canvas} from './Canvas';
-import {Login_overlay} from './Login';
+import { TopBar } from "./Topbar";
+import { RightBar } from "./Rightbar";
+import { LeftBar } from "./Leftbar";
+import { BottomBar } from "./BottomBar";
+import { Canvas } from "./Canvas";
+import { Login_overlay } from "./Login";
 import { MouseLayer } from "./Components/MouseLayer";
 import { Waiting } from "./Waiting";
 import { ImageDropOverlay } from "./Components/ImageDrag";
@@ -42,8 +42,8 @@ function App() {
           const response = await fetch(`${mainServerIp}/join/${sessionParam}`);
           const data = await response.json();
 
-          console.log("We got")
-          console.log(data)
+          console.log("We got");
+          console.log(data);
           let ip = data["Server ip"];
 
           if (ip == "None") {
@@ -55,23 +55,27 @@ function App() {
 
           imageManagerRef.current = new ImageStorage(
             ip,
-            usernameParam? usernameParam : "NO_USERNAME",
-            (image) => { 
+            usernameParam ? usernameParam : "NO_USERNAME",
+            (image) => {
               const genData = async (image: Image) => {
-
-                const file = base64ToFile(image.binaryData, "image.png", "image/png");
+                const file = base64ToFile(
+                  image.binaryData,
+                  "image.png",
+                  "image/png",
+                );
                 const arrbuf = await file.arrayBuffer();
                 const bitmap = await createImageBitmap(file);
-                const hash =  image.imageId;
-                
-                createTextureFromArrayBuffer(glContext, arrbuf)
-                  .then(texture => {
+                const hash = image.imageId;
+
+                createTextureFromArrayBuffer(glContext, arrbuf).then(
+                  (texture) => {
                     imageCache.set(hash, texture);
-                  });
-              }
-              console.log("Generating new photo from others1")
+                  },
+                );
+              };
+              console.log("Generating new photo from others1");
               genData(image);
-            }
+            },
           );
         } catch (err) {
           console.error("Failed to fetch session IP", err);
@@ -81,7 +85,9 @@ function App() {
       fetchSessionIp();
     }
   }, [mainServerIp]);
-  const hasParams = new URLSearchParams(window.location.search).has("session_id");
+  const hasParams = new URLSearchParams(window.location.search).has(
+    "session_id",
+  );
   return (
     <>
       {!hasParams && (
@@ -98,13 +104,15 @@ function App() {
         userRole={userRole}
         setUserRole={setUserRole}
       />
-      
+
       {userRole ? (
         <RoleRevealOverlay
           role={userRole}
           onConfirm={() => console.log("User understood their role")}
         />
-      ) : (<></>)}
+      ) : (
+        <></>
+      )}
 
       <ImageDropOverlay
         src="./assets/dragDrop.png"
@@ -115,40 +123,36 @@ function App() {
             imageManagerRef.current = new ImageStorage(
               serverIp,
               username,
-              (image) => { 
+              (image) => {
                 const genData = async (image: Image) => {
                   const arrbuf = image.binaryData;
-                  const blob = new Blob([arrbuf], { type: "image/png" })
+                  const blob = new Blob([arrbuf], { type: "image/png" });
                   const bitmap = await createImageBitmap(blob);
-                  const hash =  image.imageId;
-                  
-                  createTextureFromArrayBuffer(glContext, arrbuf)
-                    .then(texture => {
+                  const hash = image.imageId;
+
+                  createTextureFromArrayBuffer(glContext, arrbuf).then(
+                    (texture) => {
                       imageCache.set(hash, texture);
-                    });
-                }
-                console.log("Generating new photo from others")
+                    },
+                  );
+                };
+                console.log("Generating new photo from others");
                 genData(image);
-              }
+              },
             );
           }
           const arrbuf = await file.arrayBuffer();
-          const blob = new Blob([arrbuf], { type: "image/png" })
+          const blob = new Blob([arrbuf], { type: "image/png" });
           const bitmap = await createImageBitmap(blob);
 
           const hash = await imageManagerRef.current!.uploadImage(arrbuf);
 
           // adding texture to user's own cache
-          createTextureFromArrayBuffer(glContext, arrbuf)
-            .then(texture => {
-              imageCache.set(hash, texture);
-            });
+          createTextureFromArrayBuffer(glContext, arrbuf).then((texture) => {
+            imageCache.set(hash, texture);
+          });
 
-          CreateAndSendImageObject(
-              hash,
-              bitmap.width,
-              bitmap.height
-          );
+          CreateAndSendImageObject(hash, bitmap.width, bitmap.height);
         }}
       />
 
@@ -160,18 +164,18 @@ function App() {
       />
 
       <div className="container">
-        <TopBar sessionIp={serverIp} currentTool={selectedTool} username={username} role={userRole} imageStorage={imageManagerRef.current}/>
-        
+        <TopBar
+          sessionIp={serverIp}
+          currentTool={selectedTool}
+          username={username}
+          role={userRole}
+          imageStorage={imageManagerRef.current}
+        />
+
         <div className="middle">
-          <LeftBar 
-            activeTool={selectedTool} 
-            setActiveTool={setSelectedTool} 
-          />
-          <Canvas serverIP={serverIp}/>
-          <RightBar 
-            username={username}
-            sessionIp={serverIp}
-          />
+          <LeftBar activeTool={selectedTool} setActiveTool={setSelectedTool} />
+          <Canvas serverIP={serverIp} />
+          <RightBar username={username} sessionIp={serverIp} />
         </div>
       </div>
     </>

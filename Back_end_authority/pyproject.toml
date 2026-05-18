@@ -11,4 +11,6 @@ dependencies = [
     "python-dotenv>=1.0.0",
     "python-multipart>=0.0.9",
     "markdown>=3.6",
+    "sendgrid>=6.12.5",
+    "argon2-cffi>=25.1.0",
 ]
