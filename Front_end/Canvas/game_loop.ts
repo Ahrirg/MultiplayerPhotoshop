@@ -42,7 +42,7 @@ export function initGameLoop(serverIP: string)
     requestAnimationFrame(gameLoop)
 }
 
-initGameLoop("");
+// initGameLoop("");
 // AddObject(GenerateObj(0, "", ObjectType.Line, [-1.0,-1.0,1.0,1.0], [0,0,0,1], null, [1,1,0,1]));
 // const tex = loadTestTexture(glContext!, "../arrow.png");
 // imageCache.set("rotarr", tex);
