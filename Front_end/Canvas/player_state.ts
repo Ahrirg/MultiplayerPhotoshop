@@ -35,7 +35,7 @@ interface PlayerState
 let State: PlayerState =
 {
     userID: 0,
-    selectedTool: ObjectType.SprayBrush, 
+    selectedTool: ObjectType.CalligraphyBrush, 
     selectedColor: [0,0,0,1], 
     action: PlayerAction.Idle,
     mousePosX: 0,

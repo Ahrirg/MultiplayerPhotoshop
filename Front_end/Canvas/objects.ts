@@ -19,7 +19,9 @@ export enum ObjectType
     Cloud,
     Heart,
     SprayBrush,
-    ChaoticBrush
+    ChaoticBrush,
+    RainbowBrush,
+    CalligraphyBrush
 }
 
 // Interface for objects which are ready for the GPU to render
@@ -79,7 +81,7 @@ function pushVertex(
 // Used for determining how to update temporary objects (a.k.a. whether to add cursor points to object or modify existing points)
 export function IsObjectTypeAppendable(objectType: ObjectType): boolean
 {
-    if(objectType == ObjectType.Brush || objectType == ObjectType.ChaoticBrush || objectType == ObjectType.SprayBrush)
+    if(objectType == ObjectType.Brush || objectType == ObjectType.ChaoticBrush || objectType == ObjectType.SprayBrush || objectType == ObjectType.RainbowBrush || objectType == ObjectType.CalligraphyBrush)
         return true;
 
     return false;
@@ -392,6 +394,10 @@ export function ConvertToGPUObj(object: Obj): GPUObj | null
         return SprayBrushToGPUObj(object);
     if(object.Type == ObjectType.ChaoticBrush)
         return ChaoticBrushToGPUObj(object);
+    if(object.Type == ObjectType.RainbowBrush)
+        return RainbowBrushToGPUObj(object);
+    if(object.Type == ObjectType.CalligraphyBrush)
+        return CalligraphyBrushToGPUObj(object);
 
     return null;
 }
@@ -1172,6 +1178,126 @@ function BrushToGPUObj(object: Obj): GPUObj {
         ImageId: null,
         ExtraArgs: [1, 1, 0, 1]
 
+    };
+}
+
+function CalligraphyBrushToGPUObj(object: Obj): GPUObj {
+    const vertices: number[] = [];
+    const indices: number[] = [];
+    const w = object.ExtraArgs[0];
+
+    for (let i = 0; i < object.Points.length - 2; i += 2) {
+        const x = object.Points[i];
+        const y = object.Points[i + 1];
+
+        let dx = 0, dy = 0;
+        if (i < object.Points.length - 3) {
+            dx = object.Points[i + 2] - x;
+            dy = object.Points[i + 3] - y;
+        } else if (i > 0) {
+            dx = x - object.Points[i - 2];
+            dy = y - object.Points[i - 1];
+        }
+
+        const len = Math.hypot(dx, dy);
+        if (len > 1e-4) {
+            dx /= len;
+            dy /= len;
+        } else {
+            dx = 1;
+            dy = 0;
+        }
+
+        const angle = Math.PI / 4;
+        const px = Math.cos(angle) * w;
+        const py = Math.sin(angle) * w;
+
+        const idx = vertices.length / 9;
+        pushVertex(vertices, x - px, y - py, object.Color);
+        pushVertex(vertices, x + px, y + py, object.Color);
+
+        if (i > 0) {
+            indices.push(idx - 2, idx - 1, idx, idx, idx + 1, idx - 1);
+        }
+    }
+
+    return {
+        UsrID: object.UsrID,
+        ObjID: object.ObjID,
+        Vertices: vertices,
+        Indices: indices,
+        Type: object.Type,
+        ImageId: null,
+        ExtraArgs: [1, 1, 0, 1],
+    };
+}
+
+function RainbowBrushToGPUObj(object: Obj): GPUObj {
+    const vertices: number[] = [];
+    const indices: number[] = [];
+    const w = object.ExtraArgs[0];
+
+    const colors = [
+        [1, 0, 0, 1], // red
+        [1, 0.5, 0, 1], // orange
+        [1, 1, 0, 1], // yellow
+        [0, 1, 0, 1], // green
+        [0, 0, 1, 1], // blue
+        [0.5, 0, 1, 1], // purple
+    ];
+
+    for (let i = 0; i < object.Points.length - 2; i += 2) {
+        const x = object.Points[i];
+        const y = object.Points[i + 1];
+
+        let nx = 0, ny = 0;
+
+        if (i > 0) {
+            const dx1 = x - object.Points[i - 2];
+            const dy1 = y - object.Points[i - 1];
+            const len = Math.hypot(dx1, dy1);
+            if (len > 1e-4) {
+                nx += (-dy1 / len) * w;
+                ny += (dx1 / len) * w;
+            }
+        }
+
+        if (i < object.Points.length - 3) {
+            const dx2 = object.Points[i + 2] - x;
+            const dy2 = object.Points[i + 3] - y;
+            const len = Math.hypot(dx2, dy2);
+            if (len > 1e-4) {
+                nx += (-dy2 / len) * w;
+                ny += (dx2 / len) * w;
+            }
+        }
+
+        const mlen = Math.hypot(nx, ny);
+        if (mlen > 1e-4) {
+            nx = (nx / mlen) * w;
+            ny = (ny / mlen) * w;
+        }
+
+        const colorIdx = Math.floor(i / 8) % colors.length;
+        const color = colors[colorIdx];
+
+        const idx = vertices.length / 9;
+        pushVertex(vertices, x - nx, y - ny, color);
+        pushVertex(vertices, x + nx, y + ny, color);
+
+        if (i > 0) {
+            indices.push(idx - 2, idx - 1, idx, idx, idx + 1, idx - 1);
+        }
+    }
+
+    return {
+        UsrID: object.UsrID,
+        ObjID: object.ObjID,
+        Vertices: vertices,
+        Indices: indices,
+        Type: object.Type,
+        ImageId: null,
+        ExtraArgs: [1, 1, 0, 1],
     };
 }
 

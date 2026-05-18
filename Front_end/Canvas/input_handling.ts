@@ -40,9 +40,9 @@ export function initInputHandling(canvasID: string): void
 
             const state = GetPlayerState();
             const newTool =
-                state.selectedTool === ObjectType.ChaoticBrush
+                state.selectedTool === ObjectType.Brush
                     ? ObjectType.None
-                    : ObjectType.ChaoticBrush;
+                    : ObjectType.Brush;
 
             ModifyPlayerState({ selectedTool: newTool });
         }
