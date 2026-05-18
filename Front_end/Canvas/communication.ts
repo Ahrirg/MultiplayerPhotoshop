@@ -6,6 +6,7 @@ import {
   imageCache,
   Obj,
   ResetObjInGPUArray,
+  AddObjToDeleteList
 } from "./objects.js";
 import { existingIds } from "./player_state.js";
 import {
@@ -33,6 +34,14 @@ export function sendObjectModificationMessage(
     objectId: objectId,
     changes: changes,
   });
+}
+
+export function SendObjectDeletionMessage(object: Obj)
+{
+  ws.sendMessage({
+    type: "deleteObject",
+    obj: object,
+  });  
 }
 
 export function sendObjectCreationMessage(object: Obj) {
@@ -83,5 +92,7 @@ export function handleServerMessage(event: MessageEvent) {
     if (existingIds.has(message.obj.ObjID)) return;
     existingIds.add(message.obj.ObjID);
     AddObject(message.obj);
+  } else if (message.type === "deleteObject") {
+    AddObjToDeleteList(message.obj);
   }
 }

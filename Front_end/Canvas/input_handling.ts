@@ -1,6 +1,6 @@
 // import {ObjectType } from "./objects.js";
-import { sendObjectCreationMessage, sendObjectModificationMessage } from "./communication.js";
-import { ObjectType, CursorObjectCollision, CalculateObjGeometricProperties, GenerateObj, AddObject, ResetObjInGPUArray } from "./objects.js";
+import { sendObjectCreationMessage, SendObjectDeletionMessage, sendObjectModificationMessage } from "./communication.js";
+import { ObjectType, CursorObjectCollision, CalculateObjGeometricProperties, GenerateObj, AddObject, ResetObjInGPUArray, AddObjToDeleteList } from "./objects.js";
 import {ModifyPlayerState, GetPlayerState, PlayerAction, GenerateTemporaryObject, CursorRotationIconCollision, CursorWireframeCollision, CursorScalingRectangleCollision, existingIds} from "./player_state.js";
 
 
@@ -56,13 +56,29 @@ export function initInputHandling(canvasID: string): void
             ModifyPlayerState({ action: PlayerAction.RotatingObject});
         }
     });
-        window.addEventListener("keydown", (e) => {
+    window.addEventListener("keydown", (e) => {
         if ((e.target as HTMLElement).tagName === "INPUT") return;
 
         if (e.code === "KeyS") {
             e.preventDefault();
 
             ModifyPlayerState({action: PlayerAction.ScalingObject, howScaleBeLikeWhenWeStartYoooo: structuredClone(GetPlayerState().selectedObject?.Scale),  scalingRectIndex: 0, lastFrameMousePos: [GetPlayerState().mousePosX, GetPlayerState().mousePosY], lastRecordedMousePos: [GetPlayerState().mousePosX, GetPlayerState().mousePosY]});
+        }
+    });
+
+    window.addEventListener("keydown", (e) => {
+        if ((e.target as HTMLElement).tagName === "INPUT") return;
+
+        if (e.code === "Delete") {
+            e.preventDefault();
+
+            let sObj = GetPlayerState().selectedObject
+            if(sObj != null)
+            {
+                AddObjToDeleteList(sObj!);
+                SendObjectDeletionMessage(sObj);
+            }
+            ModifyPlayerState({action: PlayerAction.Idle, selectedObject: null});
         }
     });
 
@@ -77,7 +93,7 @@ export function initInputHandling(canvasID: string): void
             if(sObj?.Type == ObjectType.Image)
             {
                 sObj.ExtraArgs[2] = GetPlayerState().mousePosY;
-                ResetObjInGPUArray(sObj.ObjID);
+                ResetObjInGPUArray(sObj.ObjID);                
             }
         }
     });

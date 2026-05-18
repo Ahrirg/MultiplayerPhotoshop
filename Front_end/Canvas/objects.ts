@@ -54,6 +54,7 @@ export interface Obj
 let objectArray: Obj[] = [];
 let uiObjArray: Obj[] = [];
 let gpuObjArray: GPUObj[] = [];
+export let deletedObjList: Obj[] = [];
 export const imageCache = new Map<string, WebGLTexture | null>();
 export const padding = 0.00;
 export const wireframeThickness = 0.01;
@@ -116,6 +117,24 @@ export function AddObject(object: Obj)
 {
     objectArray.push(object);
     AddObjToGPUArray(object);
+}
+
+export function AddObjToDeleteList(object: Obj)
+{
+    deletedObjList.push(object);
+}
+
+export function RemoveObject(id: string)
+{
+    let index = objectArray.findIndex(obj => obj.ObjID === id);
+    if (index !== -1) {
+        objectArray.splice(index, 1);
+    }
+
+    index = gpuObjArray.findIndex(obj => obj.ObjID === id);
+    if (index !== -1) {
+        gpuObjArray.splice(index, 1);
+    } 
 }
 
 export function AppendObjArrayFront(object: Obj)
