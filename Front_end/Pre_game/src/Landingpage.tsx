@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import './Landingpage.css';
 import axios from "axios";
 
@@ -106,6 +106,18 @@ export default function LandingPage({ onPlay }: LandingPageProps) {
   const [visible, setVisible] = useState<boolean>(false);
   const [currentActiveServers, setCurrentActiveServers] = useState<number>(0);
   const [showOverlay, setShowOverlay] = useState<boolean>(false);
+  const [closingOverlay, setClosingOverlay] = useState<boolean>(false);
+  const [countBump, setCountBump] = useState<boolean>(false);
+  const [countDrop, setCountDrop] = useState<boolean>(false);
+  const prevCount = useRef<number>(0);
+
+  const closeOverlay = () => {
+    setClosingOverlay(true);
+    setTimeout(() => {
+      setShowOverlay(false);
+      setClosingOverlay(false);
+    }, 300);
+  };
   const mainServerIp = `${window.location.protocol}//${window.location.hostname}:8000`;
 
   
@@ -118,23 +130,35 @@ export default function LandingPage({ onPlay }: LandingPageProps) {
 
     const result = await axios.get(`${mainServerIp}/sessions`)
     const numb = (result.data as serverData[]).length
-    console.log(numb)
-    setCurrentActiveServers(numb)
+    if (numb !== prevCount.current) {
+      setCurrentActiveServers(numb);
+      if (numb > prevCount.current) {
+        setCountBump(true);
+        setTimeout(() => setCountBump(false), 500);
+      } else if (numb < prevCount.current) {
+        setCountDrop(true);
+        setTimeout(() => setCountDrop(false), 400);
+      }
+      prevCount.current = numb;
+    }
 
     return numb
   }
 
   useEffect(() => {
-    getActiveServers()
+    getActiveServers();
     const timeout = setTimeout(() => setVisible(true), 100);
-    return () => clearTimeout(timeout);
+    const interval = setInterval(getActiveServers, 1000);
+    return () => { clearTimeout(timeout); clearInterval(interval); };
   }, []);
 
   return (
     <div className="lp-root">
-      {showOverlay? (<Login_overlay
+      {showOverlay && (<Login_overlay
                         onPlay={onPlay}
-                    />): (<></>)}
+                        onClose={closeOverlay}
+                        closing={closingOverlay}
+                    />)}
 
 
       {SPLATS.map((s, i) => <PaintSplat key={i} {...s} />)}
@@ -148,7 +172,7 @@ export default function LandingPage({ onPlay }: LandingPageProps) {
         <p className="lp-tagline">Edit fast. Guess faster. Dominate even faster.</p>
         <PlayButton label="PLAY NOW" onClick={() => {setShowOverlay(true)}} />
         <div className='active-servers'>
-          currently <strong className='active-servers-bold'>{currentActiveServers}</strong> servers are active
+          currently <strong className={`active-servers-bold ${countBump ? 'active-servers-bump' : countDrop ? 'active-servers-drop' : ''}`}>{currentActiveServers}</strong> servers are active
         </div>
       </section>
 
