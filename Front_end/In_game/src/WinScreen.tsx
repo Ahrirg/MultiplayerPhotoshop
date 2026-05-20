@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import "./Css/Win.css";
+import { LoseScreen } from "./LoseScreen";
 
 type LoginOverlayProps = {
   sessionIp: string;
   showModal: boolean;
+  didwewon: boolean;
   username: string;
   setTimeLeft: React.Dispatch<React.SetStateAction<number>>;
   onGameEnd?: () => void;
@@ -20,6 +22,7 @@ interface StatusData {
 export function WinScreen({
   sessionIp,
   showModal,
+  didwewon,
   username,
   setTimeLeft,
   onGameEnd,
@@ -28,7 +31,7 @@ export function WinScreen({
   const [currentTime, setCurrentTime] = useState<number>(Date.now());
   const [timeEnd, setTimeEnd] = useState<boolean>(false);
 
-  // NEW: gameplay stats
+  // gameplay stats
   const [timePlayed, setTimePlayed] = useState<number>(0);
   const [clickCount, setClickCount] = useState<number>(0);
 
@@ -70,7 +73,7 @@ export function WinScreen({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [timeEnd]);
 
   // Seconds left calculation
   const secondsLeft = Math.max(
@@ -78,21 +81,24 @@ export function WinScreen({
     Math.floor((timeToStart - currentTime) / 1000),
   );
 
-  // SAFE state updates (fixes React #301 crash)
+  // SAFE state updates
   useEffect(() => {
     setTimeLeft(secondsLeft);
 
-    if (timeToStart > 0 && secondsLeft <= 0) {
+    if (timeToStart > 0 && secondsLeft <= 0 && !timeEnd) {
       onGameEnd?.();
+      // Delay setting timeEnd so the vote popup/sequence has its 15s window
       setTimeout(() => setTimeEnd(true), 15000);
     }
-  }, [secondsLeft, timeToStart, setTimeLeft]);
+  }, [secondsLeft, timeToStart, setTimeLeft, onGameEnd, timeEnd]);
 
   const confettiCount = 200;
 
+  // FIX: If the game hasn't ended via state/props, OR if we explicitly lost, do not show anything.
   if (!showModal && !timeEnd) return null;
+  // if (!didwewon) return null;
 
-  return (
+  return didwewon ? (
     <div className="overlay" onClick={() => setClickCount((c) => c + 1)}>
       <div className="modalWin">
         <h1>🎉 You Won 🎉</h1>
@@ -131,5 +137,10 @@ export function WinScreen({
         })}
       </div>
     </div>
+  ) : (
+    <>
+      <div>test</div>
+      <LoseScreen sessionIp={sessionIp} username={username} show={true} />
+    </>
   );
 }

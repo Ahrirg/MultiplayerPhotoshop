@@ -17,7 +17,11 @@ export function LoseScreen({ sessionIp, username, show }: LoseScreenProps) {
   const [closing, setClosing] = useState(false);
 
   useEffect(() => {
-    if (!show || !sessionIp || !username) return;
+    // If show prop is false, clear visibility and exit
+    if (!show || !sessionIp || !username) {
+      setVisible(false);
+      return;
+    }
 
     const check = async () => {
       try {
@@ -34,36 +38,52 @@ export function LoseScreen({ sessionIp, username, show }: LoseScreenProps) {
         if (topPlayers.includes(username)) {
           setVisible(true);
         }
-      } catch {}
+      } catch (err) {
+        console.error("Failed to fetch vote results on lose screen:", err);
+      }
     };
 
+    // Run immediately on mount/update
     check();
+
+    // Poll every 1000ms to catch the data as soon as the server tallies the votes
+    const intervalId = setInterval(check, 1000);
+
+    return () => clearInterval(intervalId);
   }, [show, sessionIp, username]);
 
   const handleClose = () => {
     setClosing(true);
-    setTimeout(() => { setVisible(false); setClosing(false); }, 350);
+    setTimeout(() => {
+      setVisible(false);
+      setClosing(false);
+    }, 350);
   };
 
-  if (!visible) return null;
-
   return (
-    <div className={`lose-overlay ${closing ? 'lose-overlay--out' : ''}`}>
-      <div className={`lose-modal ${closing ? 'lose-modal--out' : ''}`}>
-
+    <div className={`lose-overlay ${closing ? "lose-overlay--out" : ""}`}>
+      <div className={`lose-modal ${closing ? "lose-modal--out" : ""}`}>
         <div className="lose-skulls">
           {Array.from({ length: 6 }).map((_, i) => (
-            <span key={i} className="lose-skull" style={{ animationDelay: `${i * 0.12}s` }}>💀</span>
+            <span
+              key={i}
+              className="lose-skull"
+              style={{ animationDelay: `${i * 0.12}s` }}
+            >
+              💀
+            </span>
           ))}
         </div>
 
         <h1 className="lose-title">You Were Voted Out</h1>
-        <p className="lose-sub">The players saw through you, <strong>{username}</strong>.</p>
+        <p className="lose-sub">
+          The players saw through you, <strong>{username}</strong>.
+        </p>
         <p className="lose-sub muted">Better luck next round.</p>
 
-        <button className="lose-btn" onClick={handleClose}>
+        {/*<button className="lose-btn" onClick={handleClose}>
           Continue Watching
-        </button>
+        </button>*/}
       </div>
     </div>
   );

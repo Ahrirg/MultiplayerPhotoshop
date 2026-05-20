@@ -22,7 +22,7 @@ export function Chat({ username, sessionIp }: SessionData) {
       const response = await axios.get(`${sessionIp}/messages/get`);
       setMessages(response.data as ChatMessage[]);
     } catch (err) {
-      console.warn("Error fetching messages", err);
+      // console.warn("Error fetching messages", err);
     }
   }
 
@@ -47,26 +47,26 @@ export function Chat({ username, sessionIp }: SessionData) {
   }
 
   useEffect(() => {
-  const fetchMessages = async () => {
-    try {
+    const fetchMessages = async () => {
+      try {
         if (username == "" || sessionIp == "") {
-            return;
+          return;
         }
         const response = await axios.get(`${sessionIp}/messages/get`);
         setMessages(response.data as ChatMessage[]);
-    } catch (err) {
-        console.warn("Error fetching messages", err);
-        }
-  };
+      } catch (err) {
+        // console.warn("Error fetching messages", err);
+      }
+    };
 
-  fetchMessages();
-
-  const interval = setInterval(() => {
     fetchMessages();
-  }, 1000);
 
-  return () => clearInterval(interval);
-}, [sessionIp, username]);
+    const interval = setInterval(() => {
+      fetchMessages();
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [sessionIp, username]);
 
   return (
     <div className="ChatContainer">
@@ -87,7 +87,12 @@ export function Chat({ username, sessionIp }: SessionData) {
           onChange={handleInput}
           placeholder="Type message..."
           rows={1}
-          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              sendMessage();
+            }
+          }}
         />
 
         <button className="SendButton" onClick={sendMessage}>

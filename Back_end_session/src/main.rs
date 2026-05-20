@@ -22,12 +22,13 @@ async fn main() {
 
     let now = SystemTime::now();
     let game_start = now + Duration::from_secs(5);
-    let game_end = now + Duration::from_secs(40);
+    let game_end = now + Duration::from_secs(15);
 
     let chat_queue = managers::messages::ChatQueue::new();
-    let mouse_chat = Arc::new(managers::mousepointers::MousePointerState::new());
-    let canvas_chat = Arc::new(managers::mousepointers::MousePointerState::new());
-    let image_chat = Arc::new(managers::mousepointers::MousePointerState::new());
+    let mouse_chat = Arc::new(managers::broadcast::BroadcastState::new());
+    let canvas_chat = Arc::new(managers::broadcast::BroadcastState::new());
+    let image_chat = Arc::new(managers::broadcast::BroadcastState::new());
+    let vote_state = Arc::new(managers::voting::VoteState::new());
 
     // base routes
     let base_router = Router::new()
@@ -64,28 +65,24 @@ async fn main() {
     let mouse_router = Router::new()
         .route(
             "/websockets/mousepointers",
-            get(managers::mousepointers::ws_handler),
+            get(managers::broadcast::ws_handler),
         )
         .with_state(mouse_chat);
 
     // canvas
     let canvas_router = Router::new()
-        .route(
-            "/websockets/canvas",
-            get(managers::mousepointers::ws_handler),
-        )
-        .route(
-            "/api/canvas/history",
-            get(managers::mousepointers::get_history),
-        )
+        .route("/websockets/canvas", get(managers::broadcast::ws_handler))
+        .route("/api/canvas/history", get(managers::broadcast::get_history))
         .with_state(canvas_chat);
+
+    let voting_router = Router::new()
+        .route("/vote/cast", post(managers::voting::cast_vote))
+        .route("/vote/results", get(managers::voting::get_results))
+        .with_state(vote_state);
 
     //image
     let image_router = Router::new()
-        .route(
-            "/websockets/image",
-            get(managers::mousepointers::ws_handler),
-        )
+        .route("/websockets/image", get(managers::broadcast::ws_handler))
         .with_state(image_chat);
 
     let app = base_router
@@ -93,6 +90,7 @@ async fn main() {
         .merge(mouse_router)
         .merge(canvas_router)
         .merge(image_router)
+        .merge(voting_router)
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)
