@@ -33,7 +33,7 @@ export function initInputHandling(canvasID: string): void
 
     // FOR DEBUG
     window.addEventListener("keydown", (e) => {
-        if ((e.target as HTMLElement).tagName === "INPUT") return;
+        if ((e.target as HTMLElement).tagName === "INPUT" || (e.target as HTMLElement).tagName === "TEXTAREA") return;
 
         if (e.code === "KeyG") {
             e.preventDefault();
@@ -48,7 +48,7 @@ export function initInputHandling(canvasID: string): void
         }
     });
     window.addEventListener("keydown", (e) => {
-        if ((e.target as HTMLElement).tagName === "INPUT") return;
+        if ((e.target as HTMLElement).tagName === "INPUT" || (e.target as HTMLElement).tagName === "TEXTAREA") return;
 
         if (e.code === "KeyR") {
             e.preventDefault();
@@ -57,7 +57,7 @@ export function initInputHandling(canvasID: string): void
         }
     });
     window.addEventListener("keydown", (e) => {
-        if ((e.target as HTMLElement).tagName === "INPUT") return;
+        if ((e.target as HTMLElement).tagName === "INPUT" || (e.target as HTMLElement).tagName === "TEXTAREA") return;
 
         if (e.code === "KeyS") {
             e.preventDefault();
@@ -67,7 +67,7 @@ export function initInputHandling(canvasID: string): void
     });
 
     window.addEventListener("keydown", (e) => {
-        if ((e.target as HTMLElement).tagName === "INPUT") return;
+        if ((e.target as HTMLElement).tagName === "INPUT" || (e.target as HTMLElement).tagName === "TEXTAREA") return;
 
         if (e.code === "Delete") {
             e.preventDefault();
@@ -83,7 +83,7 @@ export function initInputHandling(canvasID: string): void
     });
 
         window.addEventListener("keydown", (e) => {
-        if ((e.target as HTMLElement).tagName === "INPUT") return;
+        if ((e.target as HTMLElement).tagName === "INPUT" || (e.target as HTMLElement).tagName === "TEXTAREA") return;
 
         if (e.code === "KeyB") {
             e.preventDefault();
@@ -105,7 +105,7 @@ export function initInputHandling(canvasID: string): void
     });
 
     window.addEventListener("keyup", (e) => {
-        if ((e.target as HTMLElement).tagName === "INPUT") return;
+        if ((e.target as HTMLElement).tagName === "INPUT" || (e.target as HTMLElement).tagName === "TEXTAREA") return;
 
         if (e.code === "KeyR" || e.code === "KeyS") {
             ModifyPlayerState({action: PlayerAction.Selecting});

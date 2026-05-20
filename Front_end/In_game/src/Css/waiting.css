@@ -1,4 +1,68 @@
 
+/* Waiting screen two-panel layout */
+.waiting-layout {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+/* Cursor customizer panel */
+.cursorPanel {
+  background-color: #2f2f2f;
+  padding: 24px 20px;
+  border-radius: 10px;
+  width: 220px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  color: #e0e0e0;
+  text-align: center;
+}
+
+.cursorPanel h3 {
+  margin-bottom: 14px;
+  font-size: 16px;
+  color: #ffffff;
+}
+
+.cursor-picker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.cursor-arrow {
+  font-size: 18px;
+  background: #3a3a3a;
+  border: none;
+  border-radius: 6px;
+  color: #e0e0e0;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  transition: background 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cursor-arrow:hover {
+  background: #555;
+}
+
+@keyframes cursor-pop {
+  0%   { transform: scale(0.4); opacity: 0; }
+  70%  { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+.cursor-preview-emoji {
+  font-size: 48px;
+  line-height: 1;
+  display: inline-block;
+  animation: cursor-pop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
 /* Main waiting box */
 .waitingRoom {
   background-color: #2f2f2f;

@@ -5,11 +5,20 @@ import axios from "axios";
 import { ROLES } from "./Components/Roles";
 import type { RoleInfo } from "./Components/Roles";
 
+const CURSOR_OPTIONS = [
+  "🐱", "🐶", "🦊", "🐸",
+  "🐙", "🦄", "🐼", "🐯",
+  "🐧", "🐢", "🦅", "🐝",
+  "🦁", "🐻", "🐨", "🐳",
+];
+
 type LoginOverlayProps = {
   sessionIp: string;
   seenPlayers: string[];
   userRole: RoleInfo | null,
   setUserRole: React.Dispatch<React.SetStateAction<RoleInfo | null>>;
+  cursorEmoji: string;
+  setCursorEmoji: React.Dispatch<React.SetStateAction<string>>;
 };
 
 interface StatusData {
@@ -19,7 +28,7 @@ interface StatusData {
   game_end: string;
 }
 
-export function Waiting({ sessionIp, seenPlayers, userRole, setUserRole  }: LoginOverlayProps) {
+export function Waiting({ sessionIp, seenPlayers, userRole, setUserRole, cursorEmoji, setCursorEmoji }: LoginOverlayProps) {
   const [showRoom, setShowRoom] = useState(true);
   const [timeToStart, setTimeToStart] = useState<number>(0);
   const [currentTime, setCurrentTime] = useState<number>(Date.now());
@@ -69,19 +78,41 @@ export function Waiting({ sessionIp, seenPlayers, userRole, setUserRole  }: Logi
 
   return (
     <div className="overlay">
-      <div className="waitingRoom">
-        <h2>Current players in the server:</h2>
+      <div className="waiting-layout">
+        <div className="waitingRoom">
+          <h2>Current players in the server:</h2>
 
-        <div className="PlayerList">
-          {seenPlayers.map((curName, index) => (
-            <div key={index}>
-              <strong>🟢 {curName}</strong>
-            </div>
-          ))}
+          <div className="PlayerList">
+            {seenPlayers.map((curName, index) => (
+              <div key={index}>
+                <strong>🟢 {curName}</strong>
+              </div>
+            ))}
+          </div>
+
+          <div>Starting in {secondsLeft} sec's</div>
         </div>
 
-        <div>Starting in {secondsLeft} sec's</div>
-        <></>
+        <div className="cursorPanel">
+          <h3>Pick your cursor</h3>
+          <div className="cursor-picker">
+            <button
+              className="cursor-arrow"
+              onClick={() => {
+                const idx = CURSOR_OPTIONS.indexOf(cursorEmoji);
+                setCursorEmoji(CURSOR_OPTIONS[(idx - 1 + CURSOR_OPTIONS.length) % CURSOR_OPTIONS.length]);
+              }}
+            >◀</button>
+            <span key={cursorEmoji} className="cursor-preview-emoji">{cursorEmoji}</span>
+            <button
+              className="cursor-arrow"
+              onClick={() => {
+                const idx = CURSOR_OPTIONS.indexOf(cursorEmoji);
+                setCursorEmoji(CURSOR_OPTIONS[(idx + 1) % CURSOR_OPTIONS.length]);
+              }}
+            >▶</button>
+          </div>
+        </div>
       </div>
     </div>
   );

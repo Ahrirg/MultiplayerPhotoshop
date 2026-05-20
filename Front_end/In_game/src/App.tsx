@@ -25,6 +25,7 @@ function App() {
   const imageManagerRef = useRef<ImageStorage | null>(null);
   const mainServerIp = `${window.location.protocol}//${window.location.hostname}:8000`;
   const [userRole, setUserRole] = useState<RoleInfo | null>(null);
+  const [cursorEmoji, setCursorEmoji] = useState<string>("🐱");
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -103,6 +104,8 @@ function App() {
         seenPlayers={seenPlayer}
         userRole={userRole}
         setUserRole={setUserRole}
+        cursorEmoji={cursorEmoji}
+        setCursorEmoji={setCursorEmoji}
       />
 
       {userRole ? (
@@ -161,6 +164,7 @@ function App() {
         sessionIp={serverIp}
         seenPlayers={seenPlayer}
         setSeenPlayer={setSeenPlayer}
+        cursorEmoji={cursorEmoji}
       />
 
       <div className="container">

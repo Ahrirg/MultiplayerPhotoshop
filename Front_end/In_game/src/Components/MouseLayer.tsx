@@ -8,15 +8,17 @@ type SessionData = {
   sessionIp: string;
   seenPlayers: string[];
   setSeenPlayer: React.Dispatch<React.SetStateAction<string[]>>;
+  cursorEmoji: string;
 };
 
 type MousePointerObjs = {
   name: string;
   x: number;
   y: number;
+  cursor?: string;
 }
 
-export function MouseLayer({ username, sessionIp, seenPlayers, setSeenPlayer }: SessionData) {
+export function MouseLayer({ username, sessionIp, seenPlayers, setSeenPlayer, cursorEmoji }: SessionData) {
 
   const [mousePointPos, setMousePointPos] = useState<MousePointerObjs[]>([]);
   const websocketRef = useRef<WebsocketWrapper | null>(null);
@@ -81,14 +83,15 @@ export function MouseLayer({ username, sessionIp, seenPlayers, setSeenPlayer }: 
       const payload = {
         name: username,
         x: mouseX,
-        y: mouseY
+        y: mouseY,
+        cursor: cursorEmoji,
       };
 
       websocketOBJ.sendMessage(JSON.stringify(payload));
     }, 10);
 
     return () => clearInterval(interval);
-  }, [username, mouseX, mouseY]);
+  }, [username, mouseX, mouseY, cursorEmoji]);
 
   return (
     <div
@@ -103,6 +106,7 @@ export function MouseLayer({ username, sessionIp, seenPlayers, setSeenPlayer }: 
             RelativeX={ptr.x}
             RelativeY={ptr.y}
             name={ptr.name}
+            cursor={ptr.cursor}
           />
       ))}
     </div>

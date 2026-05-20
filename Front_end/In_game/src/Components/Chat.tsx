@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import "../Css/Chat.css";
 
@@ -15,6 +15,7 @@ type SessionData = {
 export function Chat({ username, sessionIp }: SessionData) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   async function updateMessages() {
     try {
@@ -39,6 +40,10 @@ export function Chat({ username, sessionIp }: SessionData) {
     } catch (err) {
       console.warn("There was an error sending message", err);
     }
+  }
+
+  function handleInput(e: React.ChangeEvent<HTMLTextAreaElement>) {
+    setInputMessage(e.target.value);
   }
 
   useEffect(() => {
@@ -75,11 +80,14 @@ export function Chat({ username, sessionIp }: SessionData) {
       </div>
 
       <div className="Bottom">
-        <input
+        <textarea
+          ref={textareaRef}
           className="Textbar"
           value={inputMessage}
-          onChange={(e) => setInputMessage(e.target.value)}
+          onChange={handleInput}
           placeholder="Type message..."
+          rows={1}
+          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
         />
 
         <button className="SendButton" onClick={sendMessage}>

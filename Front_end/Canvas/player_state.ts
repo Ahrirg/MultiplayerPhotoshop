@@ -35,7 +35,7 @@ interface PlayerState
 let State: PlayerState =
 {
     userID: 0,
-    selectedTool: ObjectType.CalligraphyBrush, 
+    selectedTool: ObjectType.None,
     selectedColor: [0,0,0,1], 
     action: PlayerAction.Idle,
     mousePosX: 0,
@@ -85,6 +85,11 @@ export function ModifyImageTransparency(newTransparency: number)
 export function GetPlayerState()
 {
     return State;
+}
+
+export function IsImageSelected(): boolean
+{
+    return State.selectedObject?.Type === ObjectType.Image;
 }
 
 export function HandleUIObjects(): void
