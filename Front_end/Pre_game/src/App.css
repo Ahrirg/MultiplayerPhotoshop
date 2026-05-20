@@ -30,6 +30,27 @@
 
 
 /* OVERLAY LOGIN */
+@keyframes overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes overlay-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+@keyframes modal-in {
+  0%   { opacity: 0; transform: translateY(24px) scale(0.95); }
+  60%  { transform: translateY(-4px) scale(1.01); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes modal-out {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to   { opacity: 0; transform: translateY(20px) scale(0.95); }
+}
+
 .overlay {
   position: fixed;
   top: 0;
@@ -45,16 +66,53 @@
   background: rgba(0,0,0,0.4);
 
   z-index: 1000;
+  animation: overlay-in 0.2s ease both;
+}
+
+.overlay--closing {
+  animation: overlay-out 0.3s ease forwards;
+}
+
+.modal--closing {
+  animation: modal-out 0.3s ease forwards;
 }
 
 .modal {
+  position: relative;
   background: rgb(0, 0, 0);
   padding: 30px;
   width: 350px;
-
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  animation: modal-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.8), 0 2px 12px rgba(0, 0, 0, 0.6);
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.modal-close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  background: transparent;
+  border: 1px solid #444;
+  border-radius: 6px;
+  color: #aaa;
+  font-size: 14px;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.modal-close:hover {
+  border-color: #aaa;
+  color: #fff;
 }
 
 input {
@@ -70,4 +128,72 @@ input {
   flex: 0 0 50%;
   background: #292929;
   /* top: -100px; */
+}
+
+/* server list scroll container */
+.server-list-wrapper {
+  position: relative;
+  margin: 10px 0;
+}
+
+.server-list {
+  max-height: 180px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #444 transparent;
+  padding-right: 4px;
+}
+
+/* fade-out at bottom when list overflows */
+.server-list-fade {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  background: linear-gradient(to bottom, transparent, rgb(0,0,0));
+  pointer-events: none;
+  border-radius: 0 0 6px 6px;
+}
+
+/* initial staggered entrance */
+@keyframes server-enter {
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* flash-in for a newly created server */
+@keyframes server-new {
+  0%   { opacity: 0; transform: translateX(10px); border-color: #7a9eff; }
+  70%  { border-color: #7a9eff; }
+  100% { opacity: 1; transform: translateX(0); border-color: #444; }
+}
+
+.server-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border: 1px solid #444;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  background: #111;
+}
+
+.server-row:hover {
+  border-color: #888;
+}
+
+.server-row--enter {
+  animation: server-enter 0.3s ease both;
+}
+
+.server-row--new {
+  animation: server-new 0.35s ease-out both;
+}
+
+.server-id {
+  font-size: 13px;
+  color: #ccc;
+  font-family: monospace;
 }
