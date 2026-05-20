@@ -21,8 +21,8 @@ async fn main() {
     let addr = format!("0.0.0.0:{}", args.port);
 
     let now = SystemTime::now();
-    let game_start = now + Duration::from_secs(5);
-    let game_end = now + Duration::from_secs(15);
+    let game_start = now + Duration::from_secs(15);
+    let game_end = now + Duration::from_secs(60);
 
     let chat_queue = managers::messages::ChatQueue::new();
     let mouse_chat = Arc::new(managers::broadcast::BroadcastState::new());
