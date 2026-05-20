@@ -7,6 +7,7 @@ type LoginOverlayProps = {
   showModal: boolean;
   username: string;
   setTimeLeft: React.Dispatch<React.SetStateAction<number>>;
+  onGameEnd?: () => void;
 };
 
 interface StatusData {
@@ -21,6 +22,7 @@ export function WinScreen({
   showModal,
   username,
   setTimeLeft,
+  onGameEnd,
 }: LoginOverlayProps) {
   const [timeToStart, setTimeToStart] = useState<number>(0);
   const [currentTime, setCurrentTime] = useState<number>(Date.now());
@@ -82,6 +84,7 @@ export function WinScreen({
 
     if (timeToStart > 0 && secondsLeft <= 0) {
       setTimeEnd(true);
+      onGameEnd?.();
     }
   }, [secondsLeft, timeToStart, setTimeLeft]);
 

@@ -14,7 +14,11 @@ import star4Icon from './assets/star4.svg'
 import cloudIcon from './assets/cloud.svg'
 import { ColorPicker } from './Components/ColorPicker'
 import { ImageEdit } from './Components/ImageHueSat'
-import { ModifyPlayerState } from '../../Canvas/player_state'
+import { ModifyPlayerState, ModifyImageBrightness, ModifyImageContrast, ModifyImageSaturation, IsImageSelected } from '../../Canvas/player_state'
+import { createTextureFromArrayBuffer } from '../../Canvas/renderer'
+import { glContext } from '../../Canvas/game_loop'
+import { imageCache } from '../../Canvas/objects'
+import { CreateAndSendImageObject } from '../../Canvas/input_handling'
 import { WinScreen } from './WinScreen'
 import { ImageStorage } from "./utils/imageStorage";
 
@@ -64,6 +68,9 @@ export function TopBar({ sessionIp, currentTool, username, imageStorage, role}: 
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [showWinScreen, setShowWinScreen] = useState(false);
   const [time, setTime] = useState(0);
+  const [imageSelected, setImageSelected] = useState(false);
+  const [imageButtonVisible, setImageButtonVisible] = useState(false);
+  const [imageButtonLeaving, setImageButtonLeaving] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const handleImportClick = () => {
@@ -72,20 +79,29 @@ export function TopBar({ sessionIp, currentTool, username, imageStorage, role}: 
   
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
-    if (files && files.length > 0) {
-      const selectedFile = files[0];
-
-      try {
-        const buffer = await selectedFile.arrayBuffer();
-        if (!imageStorage) {
-          console.warn("ImageStorage not initialized yet");
-          return;
-        }
-       imageStorage.uploadImage(buffer);
-      } catch (error) {
-        console.error("Error reading file as ArrayBuffer:", error);
-      }
+    if (!files || files.length === 0) return;
+    if (!imageStorage) {
+      console.warn("ImageStorage not initialized yet");
+      return;
     }
+
+    try {
+      const buffer = await files[0].arrayBuffer();
+      const blob = new Blob([buffer], { type: files[0].type });
+      const bitmap = await createImageBitmap(blob);
+
+      const hash = await imageStorage.uploadImage(buffer);
+
+      createTextureFromArrayBuffer(glContext, buffer).then((texture) => {
+        imageCache.set(hash, texture);
+      });
+
+      CreateAndSendImageObject(hash, bitmap.width, bitmap.height);
+    } catch (error) {
+      console.error("Error uploading image:", error);
+    }
+
+    event.target.value = '';
   };
 
   useEffect(() => {
@@ -111,9 +127,32 @@ export function TopBar({ sessionIp, currentTool, username, imageStorage, role}: 
   }, [activeColor])
 
   useEffect(() => {
-    console.log(`Changed to: ${activeImgEdit}`)
-    ModifyPlayerState({selectedColor: [brightness, saturation, contrast]})
+    ModifyImageBrightness(activeImgEdit.brightness)
+    ModifyImageContrast(activeImgEdit.contrast)
+    ModifyImageSaturation(activeImgEdit.saturation)
   }, [activeImgEdit])
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      const selected = IsImageSelected();
+      setImageSelected(prev => {
+        if (prev === selected) return prev;
+        if (selected) {
+          setImageButtonLeaving(false);
+          setImageButtonVisible(true);
+        } else {
+          setEditingPicker(false);
+          setImageButtonLeaving(true);
+          setTimeout(() => {
+            setImageButtonVisible(false);
+            setImageButtonLeaving(false);
+          }, 200);
+        }
+        return selected;
+      });
+    }, 100);
+    return () => clearInterval(id);
+  }, [])
 
   return (
     <div className="top">
@@ -146,7 +185,7 @@ export function TopBar({ sessionIp, currentTool, username, imageStorage, role}: 
           <button
             ref={buttonRef}
             className="top-button"
-            onClick={() => setShowPicker(p => !p)}
+            onClick={() => { setShowPicker(p => !p); setEditingPicker(false); }}
             style={{ borderColor: showPicker ? activeColor : 'transparent' }}>
             <span className="top-button-swatch" style={{ background: activeColor }} />
             <b>COLOR</b>
@@ -156,16 +195,20 @@ export function TopBar({ sessionIp, currentTool, username, imageStorage, role}: 
             <ColorPicker onColorChange={setActiveColor} buttonRef={buttonRef} visible={showPicker} hue={hue} brightness={brightness} onHueChange={setHue} onBrightnessChange={setBrightness}/>
           )}
         </div>
-        <button 
-          className="top-button"
+        {imageButtonVisible && (
+        <button
+          className={`top-button ${imageButtonLeaving ? 'top-button-pop-out' : 'top-button-pop'}`}
           ref={buttonRef}
-          onClick={() => setEditingPicker(p => !p)}
+          onClick={() => { setEditingPicker(p => !p); setShowPicker(false); }}
           >
           <b>IMAGE EDIT</b>
         </button>
-        {showEditing && (
-            <ImageEdit onImgChange={setImgEdit} buttonRef={buttonRef} visible={showEditing} brightness={brightnessImg} contrast={contrast} saturation={saturation} 
-            onBrightnessChange={setBrightnessImg} onContrastChange={setContrast} onSaturationChange={setSaturation}/>
+        )}
+        {showEditing && imageSelected && (
+            <ImageEdit onImgChange={setImgEdit} buttonRef={buttonRef} visible={showEditing} brightness={brightnessImg} contrast={contrast} saturation={saturation}
+            onBrightnessChange={(v) => { setBrightnessImg(v); ModifyImageBrightness(v); }}
+            onContrastChange={(v) => { setContrast(v); ModifyImageContrast(v); }}
+            onSaturationChange={(v) => { setSaturation(v); ModifyImageSaturation(v); }}/>
           )}
       </div>
       <div className='role-indicator'>
@@ -181,6 +224,7 @@ export function TopBar({ sessionIp, currentTool, username, imageStorage, role}: 
         setTimeLeft={setTime}
         showModal={showWinScreen}
         username={username}
+        onGameEnd={() => { setShowPicker(false); setEditingPicker(false); }}
       />
     </div>
   );
