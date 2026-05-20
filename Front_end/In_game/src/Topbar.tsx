@@ -20,6 +20,8 @@ import { glContext } from '../../Canvas/game_loop'
 import { imageCache } from '../../Canvas/objects'
 import { CreateAndSendImageObject } from '../../Canvas/input_handling'
 import { WinScreen } from './WinScreen'
+import { LoseScreen } from './LoseScreen'
+import { VotePopup } from './Components/VotePopup'
 import { ImageStorage } from "./utils/imageStorage";
 
 import './Css/topBar.css'
@@ -31,6 +33,7 @@ interface TopBarProps {
   username: string;
   role: RoleInfo | null;
   imageStorage: ImageStorage | null;
+  seenPlayers: string[];
 }
 
 const toolIcons: Record<string, string> = {
@@ -51,7 +54,7 @@ const toolIcons: Record<string, string> = {
   Cloud: cloudIcon
 };
 
-export function TopBar({ sessionIp, currentTool, username, imageStorage, role}: TopBarProps) {
+export function TopBar({ sessionIp, currentTool, username, imageStorage, role, seenPlayers }: TopBarProps) {
   const [showPicker, setShowPicker] = useState(false);
   const [showEditing, setEditingPicker] = useState(false);
   const [activeColor, setActiveColor] = useState('#FF0000');
@@ -71,6 +74,15 @@ export function TopBar({ sessionIp, currentTool, username, imageStorage, role}: 
   const [imageSelected, setImageSelected] = useState(false);
   const [imageButtonVisible, setImageButtonVisible] = useState(false);
   const [imageButtonLeaving, setImageButtonLeaving] = useState(false);
+  const [showVote, setShowVote] = useState(false);
+  const [showLose, setShowLose] = useState(false);
+  const [closingVote, setClosingVote] = useState(false);
+
+  const openVote  = () => { setShowVote(true); setClosingVote(false); };
+  const closeVote = () => {
+    setClosingVote(true);
+    setTimeout(() => { setShowVote(false); setClosingVote(false); }, 280);
+  };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const handleImportClick = () => {
@@ -219,12 +231,26 @@ export function TopBar({ sessionIp, currentTool, username, imageStorage, role}: 
       <div className='win-screen'>
         <button onClick={()=>{setShowWinScreen(true)}}><b>{time}</b></button>
       </div>
+      {showVote && (
+        <VotePopup
+          players={seenPlayers}
+          username={username}
+          sessionIp={sessionIp}
+          onClose={closeVote}
+          closing={closingVote}
+        />
+      )}
+      <LoseScreen
+        sessionIp={sessionIp}
+        username={username}
+        show={showLose}
+      />
       <WinScreen
         sessionIp={sessionIp}
         setTimeLeft={setTime}
         showModal={showWinScreen}
         username={username}
-        onGameEnd={() => { setShowPicker(false); setEditingPicker(false); }}
+        onGameEnd={() => { setShowPicker(false); setEditingPicker(false); openVote(); setTimeout(() => setShowLose(true), 15000); }}
       />
     </div>
   );

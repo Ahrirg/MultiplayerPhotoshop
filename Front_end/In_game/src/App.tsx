@@ -174,6 +174,7 @@ function App() {
           username={username}
           role={userRole}
           imageStorage={imageManagerRef.current}
+          seenPlayers={seenPlayer}
         />
 
         <div className="middle">

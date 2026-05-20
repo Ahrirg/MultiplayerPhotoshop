@@ -1,0 +1,163 @@
+/* ── Overlay ───────────────────────────────── */
+@keyframes vote-overlay-in  { from { opacity: 0; }            to { opacity: 1; } }
+@keyframes vote-overlay-out { from { opacity: 1; }            to { opacity: 0; } }
+@keyframes vote-modal-in {
+  0%   { opacity: 0; transform: translateY(28px) scale(0.94); }
+  60%  { transform: translateY(-4px) scale(1.01); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes vote-modal-out {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to   { opacity: 0; transform: translateY(20px) scale(0.94); }
+}
+@keyframes vote-row-in {
+  from { opacity: 0; transform: translateX(-14px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes vote-bar-grow {
+  from { width: 0%; }
+}
+
+.vote-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px);
+  z-index: 900;
+  animation: vote-overlay-in 0.2s ease both;
+}
+.vote-overlay--out { animation: vote-overlay-out 0.28s ease forwards; }
+
+/* ── Modal ─────────────────────────────────── */
+.vote-modal {
+  position: relative;
+  background: #1a1a1a;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 14px;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.8);
+  padding: 28px 24px 24px;
+  width: 360px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: vote-modal-in 0.35s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+}
+.vote-modal--out { animation: vote-modal-out 0.28s ease forwards; }
+
+/* ── Close ─────────────────────────────────── */
+.vote-close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  background: transparent;
+  border: 1px solid #444;
+  border-radius: 6px;
+  color: #aaa;
+  font-size: 13px;
+  width: 26px;
+  height: 26px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s, color 0.15s;
+}
+.vote-close:hover { border-color: #aaa; color: #fff; }
+
+/* ── Header ────────────────────────────────── */
+.vote-header { text-align: center; }
+.vote-icon   { font-size: 28px; }
+.vote-title  { margin: 6px 0 4px; font-size: 17px; color: #fff; }
+.vote-sub    { font-size: 12px; color: #888; margin: 0; }
+
+/* ── List ──────────────────────────────────── */
+.vote-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  max-height: 50vh;
+  scrollbar-width: thin;
+  scrollbar-color: #444 transparent;
+}
+
+.vote-empty {
+  text-align: center;
+  color: #555;
+  font-size: 13px;
+  padding: 20px 0;
+}
+
+/* ── Row ───────────────────────────────────── */
+.vote-row {
+  background: #252525;
+  border: 1px solid #363636;
+  border-radius: 8px;
+  padding: 10px 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  animation: vote-row-in 0.3s ease both;
+  transition: border-color 0.2s, background 0.2s;
+}
+.vote-row:nth-child(1) { animation-delay: 0ms; }
+.vote-row:nth-child(2) { animation-delay: 50ms; }
+.vote-row:nth-child(3) { animation-delay: 100ms; }
+.vote-row:nth-child(4) { animation-delay: 150ms; }
+.vote-row:nth-child(5) { animation-delay: 200ms; }
+.vote-row:nth-child(6) { animation-delay: 250ms; }
+
+.vote-row--voted   { border-color: #7a9eff; background: #1c2540; }
+.vote-row--disabled { opacity: 0.45; }
+
+.vote-row-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.vote-player-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e0e0e0;
+}
+
+/* ── Vote button ───────────────────────────── */
+.vote-btn {
+  padding: 4px 14px;
+  border-radius: 5px;
+  border: 1px solid #555;
+  background: #2f2f2f;
+  color: #ccc;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.vote-btn:hover:not(:disabled)  { background: #3a3a3a; border-color: #888; color: #fff; }
+.vote-btn:disabled               { cursor: default; }
+.vote-btn--active                { background: #7a9eff; border-color: #7a9eff; color: #fff; }
+
+/* ── Progress bar ──────────────────────────── */
+.vote-bar-track {
+  height: 4px;
+  background: #333;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.vote-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #7a9eff, #a78bfa);
+  border-radius: 2px;
+  transition: width 0.4s ease;
+  animation: vote-bar-grow 0.4s ease both;
+}
+
+.vote-count {
+  font-size: 11px;
+  color: #666;
+  text-align: right;
+}
