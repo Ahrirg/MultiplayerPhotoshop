@@ -83,8 +83,8 @@ export function WinScreen({
     setTimeLeft(secondsLeft);
 
     if (timeToStart > 0 && secondsLeft <= 0) {
-      setTimeEnd(true);
       onGameEnd?.();
+      setTimeout(() => setTimeEnd(true), 15000);
     }
   }, [secondsLeft, timeToStart, setTimeLeft]);
 
