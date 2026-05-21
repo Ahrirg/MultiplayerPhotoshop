@@ -9,6 +9,12 @@ export class WebsocketWrapper {
     onMessageCallback: (event: MessageEvent<unknown>) => void,
   ) {
     this.ipaddress = `ws://${sessionIp.replace("http://", "")}/websockets/${websocketChannel}`;
+
+    if (this.ipaddress.includes("127.0.0.1")) {
+      const currentHost = window.location.hostname;
+      this.ipaddress = this.ipaddress.replace("127.0.0.1", currentHost);
+    }
+
     this.websocketObject = new WebSocket(this.ipaddress);
     this.msgEvent = onMessageCallback;
 
