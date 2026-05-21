@@ -1,20 +1,32 @@
 import { useEffect, useState } from "react";
-import './Css/waiting.css'
+import "./Css/waiting.css";
 import axios from "axios";
 import { ROLES } from "./Components/Roles";
 import type { RoleInfo } from "./Components/Roles";
 
 export const CURSOR_OPTIONS = [
-  "🐱", "🐶", "🦊", "🐸",
-  "🐙", "🦄", "🐼", "🐯",
-  "🐧", "🐢", "🦅", "🐝",
-  "🦁", "🐻", "🐨", "🐳",
+  "🐱",
+  "🐶",
+  "🦊",
+  "🐸",
+  "🐙",
+  "🦄",
+  "🐼",
+  "🐯",
+  "🐧",
+  "🐢",
+  "🦅",
+  "🐝",
+  "🦁",
+  "🐻",
+  "🐨",
+  "🐳",
 ];
 
 type LoginOverlayProps = {
   sessionIp: string;
   seenPlayers: string[];
-  userRole: RoleInfo | null,
+  userRole: RoleInfo | null;
   setUserRole: React.Dispatch<React.SetStateAction<RoleInfo | null>>;
   cursorEmoji: string;
   setCursorEmoji: React.Dispatch<React.SetStateAction<string>>;
@@ -28,7 +40,15 @@ interface StatusData {
   game_end: string;
 }
 
-export function Waiting({ sessionIp, seenPlayers, userRole, setUserRole, cursorEmoji, setCursorEmoji, seenPlayerCursors }: LoginOverlayProps) {
+export function Waiting({
+  sessionIp,
+  seenPlayers,
+  userRole,
+  setUserRole,
+  cursorEmoji,
+  setCursorEmoji,
+  seenPlayerCursors,
+}: LoginOverlayProps) {
   const [showRoom, setShowRoom] = useState(true);
   const [timeToStart, setTimeToStart] = useState<number>(0);
   const [currentTime, setCurrentTime] = useState<number>(Date.now());
@@ -41,9 +61,13 @@ export function Waiting({ sessionIp, seenPlayers, userRole, setUserRole, cursorE
   useEffect(() => {
     const getTime = async () => {
       try {
+        if (sessionIp.includes("127.0.0.1")) {
+          const currentHost = window.location.hostname;
+          sessionIp = sessionIp.replace("127.0.0.1", currentHost);
+        }
         const result = await axios.get(`${sessionIp}/status`);
         const data = result.data as StatusData;
-        console.log(data)
+        console.log(data);
 
         setTimeToStart(Number(data.game_start));
       } catch (err) {
@@ -67,11 +91,14 @@ export function Waiting({ sessionIp, seenPlayers, userRole, setUserRole, cursorE
 
   if (!showRoom || !sessionIp) return null;
 
-  const secondsLeft = Math.max(0, Math.floor((timeToStart - currentTime) / 1000));
+  const secondsLeft = Math.max(
+    0,
+    Math.floor((timeToStart - currentTime) / 1000),
+  );
   // console.log(secondsLeft)
   if (timeToStart > 0 && secondsLeft <= 0) {
     if (!userRole) {
-        setUserRole(getRandomRole());
+      setUserRole(getRandomRole());
     }
     setShowRoom(false);
   }
@@ -79,7 +106,6 @@ export function Waiting({ sessionIp, seenPlayers, userRole, setUserRole, cursorE
   return (
     <div className="waiting-overlay">
       <div className="waiting-modal">
-
         <span className="waiting-title">Waiting Room</span>
 
         <div className="cursor-picker">
@@ -87,17 +113,27 @@ export function Waiting({ sessionIp, seenPlayers, userRole, setUserRole, cursorE
             className="cursor-arrow"
             onClick={() => {
               const idx = CURSOR_OPTIONS.indexOf(cursorEmoji);
-              setCursorEmoji(CURSOR_OPTIONS[(idx - 1 + CURSOR_OPTIONS.length) % CURSOR_OPTIONS.length]);
+              setCursorEmoji(
+                CURSOR_OPTIONS[
+                  (idx - 1 + CURSOR_OPTIONS.length) % CURSOR_OPTIONS.length
+                ],
+              );
             }}
-          >◀</button>
-          <span key={cursorEmoji} className="cursor-preview-emoji">{cursorEmoji}</span>
+          >
+            ◀
+          </button>
+          <span key={cursorEmoji} className="cursor-preview-emoji">
+            {cursorEmoji}
+          </span>
           <button
             className="cursor-arrow"
             onClick={() => {
               const idx = CURSOR_OPTIONS.indexOf(cursorEmoji);
               setCursorEmoji(CURSOR_OPTIONS[(idx + 1) % CURSOR_OPTIONS.length]);
             }}
-          >▶</button>
+          >
+            ▶
+          </button>
         </div>
 
         <div className="waiting-divider" />
@@ -109,11 +145,17 @@ export function Waiting({ sessionIp, seenPlayers, userRole, setUserRole, cursorE
             <div className="waiting-player-empty">Waiting for players…</div>
           ) : (
             seenPlayers.map((name, i) => (
-              <div key={name} className="waiting-player-row" style={{ animationDelay: `${i * 0.05}s` }}>
+              <div
+                key={name}
+                className="waiting-player-row"
+                style={{ animationDelay: `${i * 0.05}s` }}
+              >
                 <span className="waiting-player-dot" />
                 <span className="waiting-player-name">{name}</span>
                 {seenPlayerCursors[name] && (
-                  <span className="waiting-player-cursor">{seenPlayerCursors[name]}</span>
+                  <span className="waiting-player-cursor">
+                    {seenPlayerCursors[name]}
+                  </span>
                 )}
               </div>
             ))
@@ -125,7 +167,6 @@ export function Waiting({ sessionIp, seenPlayers, userRole, setUserRole, cursorE
         <div className="waiting-countdown">
           Starting in <span>{secondsLeft}s</span>
         </div>
-
       </div>
     </div>
   );
