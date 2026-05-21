@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import "./Css/Win.css";
 import { LoseScreen } from "./LoseScreen";
+import type { RoleInfo } from "./Components/Roles";
 
 type LoginOverlayProps = {
   sessionIp: string;
@@ -10,6 +11,9 @@ type LoginOverlayProps = {
   username: string;
   setTimeLeft: React.Dispatch<React.SetStateAction<number>>;
   onGameEnd?: () => void;
+  role?: RoleInfo | null;
+  clickCount?: number;
+  timePlayed?: number;
 };
 
 interface StatusData {
@@ -26,14 +30,13 @@ export function WinScreen({
   username,
   setTimeLeft,
   onGameEnd,
+  role,
+  clickCount = 0,
+  timePlayed = 0,
 }: LoginOverlayProps) {
   const [timeToStart, setTimeToStart] = useState<number>(0);
   const [currentTime, setCurrentTime] = useState<number>(Date.now());
   const [timeEnd, setTimeEnd] = useState<boolean>(false);
-
-  // gameplay stats
-  const [timePlayed, setTimePlayed] = useState<number>(0);
-  const [clickCount, setClickCount] = useState<number>(0);
 
   // Fetch game status
   useEffect(() => {
@@ -64,17 +67,6 @@ export function WinScreen({
     return () => clearInterval(interval);
   }, []);
 
-  // Time played counter
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (!timeEnd) {
-        setTimePlayed((t) => t + 1);
-      }
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [timeEnd]);
-
   // Seconds left calculation
   const secondsLeft = Math.max(
     0,
@@ -99,23 +91,45 @@ export function WinScreen({
   // if (!didwewon) return null;
 
   return didwewon ? (
-    <div className="overlay" onClick={() => setClickCount((c) => c + 1)}>
+    <div className="overlay">
       <div className="modalWin">
-        <h1>🎉 You Won 🎉</h1>
-        <h2>{username}</h2>
+        <div className="win-trophies">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <span
+              key={i}
+              className="win-trophy"
+              style={{ animationDelay: `${i * 0.12}s` }}
+            >
+              🏆
+            </span>
+          ))}
+        </div>
 
-        <p>⏱️ Time played: {timePlayed}s</p>
-        <p>🖱️ Clicks: {clickCount}</p>
+        <h1 className="win-title">You Won!</h1>
+        <p className="win-sub">
+          Well played, <strong>{username}</strong>.
+        </p>
+        <p className="win-sub muted">The crowd cheers for you.</p>
 
-        <br />
+        <div className="win-stats">
+          <div className="win-stat">
+            <span className="win-stat-value">{timePlayed}s</span>
+            <span className="win-stat-label">Time Played</span>
+          </div>
+          <div className="win-stat">
+            <span className="win-stat-value">{clickCount}</span>
+            <span className="win-stat-label">Clicks</span>
+          </div>
+        </div>
 
         <button
-          onClick={() => {
-            setClickCount((c) => c + 1);
+          className="win-btn"
+          onClick={(e) => {
+            e.stopPropagation();
             window.location.href = `${window.location.origin}`;
           }}
         >
-          <b>Return To Lobby</b>
+          Return to Lobby
         </button>
       </div>
 
@@ -138,9 +152,15 @@ export function WinScreen({
       </div>
     </div>
   ) : (
-    <>
-      <div>test</div>
-      <LoseScreen sessionIp={sessionIp} username={username} show={true} />
-    </>
+    <div>
+      <LoseScreen
+        sessionIp={sessionIp}
+        username={username}
+        show={true}
+        timePlayed={timePlayed}
+        clickCount={clickCount}
+        role={role}
+      />
+    </div>
   );
 }

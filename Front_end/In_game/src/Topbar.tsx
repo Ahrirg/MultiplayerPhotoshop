@@ -19,12 +19,15 @@ import {
   ModifyImageBrightness,
   ModifyImageContrast,
   ModifyImageSaturation,
+  ModifyImageTransparency,
   IsImageSelected,
+  GetPlayerState,
 } from "../../Canvas/player_state";
 import { createTextureFromArrayBuffer } from "../../Canvas/renderer";
 import { glContext } from "../../Canvas/game_loop";
 import { imageCache } from "../../Canvas/objects";
 import { CreateAndSendImageObject } from "../../Canvas/input_handling";
+import { sendObjectModificationMessage } from "../../Canvas/communication";
 import { WinScreen } from "./WinScreen";
 import { LoseScreen } from "./LoseScreen";
 import { VotePopup } from "./Components/VotePopup";
@@ -40,6 +43,9 @@ interface TopBarProps {
   role: RoleInfo | null;
   imageStorage: ImageStorage | null;
   seenPlayers: string[];
+  clickCount?: number;
+  timePlayed?: number;
+  onGameEnded?: () => void;
 }
 
 const toolIcons: Record<string, string> = {
@@ -67,6 +73,9 @@ export function TopBar({
   imageStorage,
   role,
   seenPlayers,
+  clickCount = 0,
+  timePlayed = 0,
+  onGameEnded,
 }: TopBarProps) {
   const [showPicker, setShowPicker] = useState(false);
   const [showEditing, setEditingPicker] = useState(false);
@@ -76,6 +85,17 @@ export function TopBar({
   const [brightnessImg, setBrightnessImg] = useState(50);
   const [saturation, setSaturation] = useState(50);
   const [contrast, setContrast] = useState(50);
+  const [transparency, setTransparency] = useState(100);
+  const imgEditDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Debounced send so slider drags don't flood the socket
+  const sendImgEdit = () => {
+    if (imgEditDebounce.current) clearTimeout(imgEditDebounce.current);
+    imgEditDebounce.current = setTimeout(() => {
+      const obj = GetPlayerState().selectedObject;
+      if (obj) sendObjectModificationMessage({ ExtraArgs: [...obj.ExtraArgs] }, obj.ObjID);
+    }, 80);
+  };
   const [activeImgEdit, setImgEdit] = useState({
     brightness: 1,
     contrast: 1,
@@ -172,9 +192,9 @@ export function TopBar({
   }, [activeColor]);
 
   useEffect(() => {
-    ModifyImageBrightness(activeImgEdit.brightness);
-    ModifyImageContrast(activeImgEdit.contrast);
-    ModifyImageSaturation(activeImgEdit.saturation);
+    ModifyImageBrightness((activeImgEdit.brightness - 50) / 50 * 0.35);
+    ModifyImageContrast(activeImgEdit.contrast / 50);
+    ModifyImageSaturation(activeImgEdit.saturation / 50);
   }, [activeImgEdit]);
 
   useEffect(() => {
@@ -278,17 +298,26 @@ export function TopBar({
             brightness={brightnessImg}
             contrast={contrast}
             saturation={saturation}
+            transparency={transparency}
             onBrightnessChange={(v) => {
               setBrightnessImg(v);
-              ModifyImageBrightness(v);
+              ModifyImageBrightness((v - 50) / 50 * 0.35);
+              sendImgEdit();
             }}
             onContrastChange={(v) => {
               setContrast(v);
-              ModifyImageContrast(v);
+              ModifyImageContrast(v / 50);
+              sendImgEdit();
             }}
             onSaturationChange={(v) => {
               setSaturation(v);
-              ModifyImageSaturation(v);
+              ModifyImageSaturation(v / 50);
+              sendImgEdit();
+            }}
+            onTransparencyChange={(v) => {
+              setTransparency(v);
+              ModifyImageTransparency(v / 100);
+              sendImgEdit();
             }}
           />
         )}
@@ -322,8 +351,12 @@ export function TopBar({
         showModal={showWinScreen}
         username={username}
         didwewon={didwewon}
+        role={role}
+        clickCount={clickCount}
+        timePlayed={timePlayed}
         onGameEnd={() => {
           setGameEnded(true);
+          onGameEnded?.();
           setShowPicker(false);
           setEditingPicker(false);
           openVote();

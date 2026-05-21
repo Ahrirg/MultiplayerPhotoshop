@@ -6,7 +6,7 @@ import { BottomBar } from "./BottomBar";
 import { Canvas } from "./Canvas";
 import { Login_overlay } from "./Login";
 import { MouseLayer } from "./Components/MouseLayer";
-import { Waiting } from "./Waiting";
+import { Waiting, CURSOR_OPTIONS } from "./Waiting";
 import { ImageDropOverlay } from "./Components/ImageDrag";
 import { ImageStorage, Image, base64ToFile } from "./utils/imageStorage";
 import { RoleRevealOverlay } from "./RoleReveal";
@@ -25,7 +25,13 @@ function App() {
   const imageManagerRef = useRef<ImageStorage | null>(null);
   const mainServerIp = `${window.location.protocol}//${window.location.hostname}:8000`;
   const [userRole, setUserRole] = useState<RoleInfo | null>(null);
-  const [cursorEmoji, setCursorEmoji] = useState<string>("🐱");
+  const [cursorEmoji, setCursorEmoji] = useState<string>(
+    () => CURSOR_OPTIONS[Math.floor(Math.random() * CURSOR_OPTIONS.length)]
+  );
+  const [clickCount, setClickCount] = useState<number>(0);
+  const [timePlayed, setTimePlayed] = useState<number>(0);
+  const [seenPlayerCursors, setSeenPlayerCursors] = useState<Record<string, string>>({});
+  const [gameEnded, setGameEnded] = useState<boolean>(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -86,6 +92,20 @@ function App() {
       fetchSessionIp();
     }
   }, [mainServerIp]);
+  // Track every mouse click across the whole game
+  useEffect(() => {
+    const onMouseDown = () => setClickCount((c) => c + 1);
+    window.addEventListener("mousedown", onMouseDown);
+    return () => window.removeEventListener("mousedown", onMouseDown);
+  }, []);
+
+  // Track time played from when the session is established
+  useEffect(() => {
+    if (!serverIp) return;
+    const interval = setInterval(() => setTimePlayed((t) => t + 1), 1000);
+    return () => clearInterval(interval);
+  }, [serverIp]);
+
   const hasParams = new URLSearchParams(window.location.search).has(
     "session_id",
   );
@@ -106,6 +126,7 @@ function App() {
         setUserRole={setUserRole}
         cursorEmoji={cursorEmoji}
         setCursorEmoji={setCursorEmoji}
+        seenPlayerCursors={{ ...seenPlayerCursors, [username]: cursorEmoji }}
       />
 
       {userRole ? (
@@ -165,6 +186,7 @@ function App() {
         seenPlayers={seenPlayer}
         setSeenPlayer={setSeenPlayer}
         cursorEmoji={cursorEmoji}
+        setSeenPlayerCursors={setSeenPlayerCursors}
       />
 
       <div className="container">
@@ -175,10 +197,13 @@ function App() {
           role={userRole}
           imageStorage={imageManagerRef.current}
           seenPlayers={seenPlayer}
+          clickCount={clickCount}
+          timePlayed={timePlayed}
+          onGameEnded={() => setGameEnded(true)}
         />
 
         <div className="middle">
-          <LeftBar activeTool={selectedTool} setActiveTool={setSelectedTool} />
+          <LeftBar activeTool={selectedTool} setActiveTool={setSelectedTool} gameEnded={gameEnded} />
           <Canvas serverIP={serverIp} />
           <RightBar username={username} sessionIp={serverIp} />
         </div>

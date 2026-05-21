@@ -17,14 +17,16 @@ import star4Icon from './assets/star4.svg'
 import cloudIcon from './assets/cloud.svg'
 import { ModifyPlayerState } from '../../Canvas/player_state'
 import { ObjectType } from '../../Canvas/objects'
+import { useEffect } from 'react'
 
 
 interface LeftBarProps {
   activeTool: string;
   setActiveTool: (tool: string) => void;
+  gameEnded?: boolean;
 }
 
-export function LeftBar({ activeTool, setActiveTool }: LeftBarProps) {
+export function LeftBar({ activeTool, setActiveTool, gameEnded }: LeftBarProps) {
   const cropBtn = useToolButton();
   const brushBtn = useToolButton();
   const rectangleBtn = useToolButton();
@@ -39,6 +41,10 @@ export function LeftBar({ activeTool, setActiveTool }: LeftBarProps) {
   const semicircleBtn = useToolButton();
   const cloudBtn = useToolButton();
   const [showBrushMenu, setShowBrushMenu] = useState(false);
+
+  useEffect(() => {
+    if (gameEnded) setShowBrushMenu(false);
+  }, [gameEnded]);
 
   const handleToolClick = (toolName: string) => {
     if (activeTool === toolName) {
@@ -74,6 +80,10 @@ export function LeftBar({ activeTool, setActiveTool }: LeftBarProps) {
         ModifyPlayerState({selectedTool: ObjectType.Cloud});
       if(toolName == "Chaotic")
         ModifyPlayerState({selectedTool: ObjectType.ChaoticBrush});
+      if(toolName == "Calligraphy")
+        ModifyPlayerState({selectedTool: ObjectType.CalligraphyBrush});
+      if(toolName == "Rainbow")
+        ModifyPlayerState({selectedTool: ObjectType.RainbowBrush});
       if(toolName == "Spray")
         ModifyPlayerState({selectedTool: ObjectType.SprayBrush});
     }
@@ -103,11 +113,80 @@ export function LeftBar({ activeTool, setActiveTool }: LeftBarProps) {
 
       {showBrushMenu && (
         <div className="brush-submenu">
-          <button onClick={() => handleToolClick('Chaotic')}>
-            CHAOTIC BRUSH
+          <span className="brush-submenu-label">Brush Type</span>
+
+          <button
+            className={activeTool === 'Brush' ? 'brush-active' : ''}
+            onClick={() => { handleToolClick('Brush'); setShowBrushMenu(false); }}
+          >
+            <svg className="brush-btn-preview" viewBox="0 0 160 14" xmlns="http://www.w3.org/2000/svg">
+              <path d="M4 7 Q40 3 80 7 Q120 11 156 7" stroke="#aaa" strokeWidth="3" fill="none" strokeLinecap="round"/>
+            </svg>
+            <span className="brush-btn-name">Standard Brush</span>
+            <span className="brush-btn-desc">Smooth, continuous stroke</span>
           </button>
-          <button onClick={() => handleToolClick('Spray')}>
-            SPRAY PAINT
+
+          <button
+            className={activeTool === 'Chaotic' ? 'brush-active' : ''}
+            onClick={() => { handleToolClick('Chaotic'); setShowBrushMenu(false); }}
+          >
+            <svg className="brush-btn-preview" viewBox="0 0 160 14" xmlns="http://www.w3.org/2000/svg">
+              <path d="M4 9 L18 4 L30 11 L44 3 L58 10 L72 5 L86 12 L100 4 L114 9 L128 3 L142 10 L156 6" stroke="#aaa" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            <span className="brush-btn-name">Chaotic Brush</span>
+            <span className="brush-btn-desc">Jagged, expressive strokes</span>
+          </button>
+
+          <button
+            className={activeTool === 'Spray' ? 'brush-active' : ''}
+            onClick={() => { handleToolClick('Spray'); setShowBrushMenu(false); }}
+          >
+            <svg className="brush-btn-preview" viewBox="0 0 160 14" xmlns="http://www.w3.org/2000/svg">
+              {Array.from({length: 28}).map((_, i) => (
+                <circle
+                  key={i}
+                  cx={6 + i * 5.5 + (i % 3 - 1) * 3}
+                  cy={7 + (i % 5 - 2) * 2.2}
+                  r={i % 4 === 0 ? 1.5 : 1}
+                  fill="#aaa"
+                  opacity={0.5 + (i % 3) * 0.2}
+                />
+              ))}
+            </svg>
+            <span className="brush-btn-name">Spray Paint</span>
+            <span className="brush-btn-desc">Scattered dot pattern</span>
+          </button>
+
+          <button
+            className={activeTool === 'Calligraphy' ? 'brush-active' : ''}
+            onClick={() => { handleToolClick('Calligraphy'); setShowBrushMenu(false); }}
+          >
+            <svg className="brush-btn-preview" viewBox="0 0 160 14" xmlns="http://www.w3.org/2000/svg">
+              <path d="M4 11 Q30 2 60 8 Q90 13 120 4 Q140 0 156 5" stroke="#aaa" strokeWidth="1" fill="none" strokeLinecap="round"/>
+              <path d="M4 11 Q30 2 60 8 Q90 13 120 4 Q140 0 156 5" stroke="#aaa" strokeWidth="5" fill="none" strokeLinecap="round" opacity="0.18"/>
+            </svg>
+            <span className="brush-btn-name">Calligraphy</span>
+            <span className="brush-btn-desc">Thin-to-thick ink strokes</span>
+          </button>
+
+          <button
+            className={activeTool === 'Rainbow' ? 'brush-active' : ''}
+            onClick={() => { handleToolClick('Rainbow'); setShowBrushMenu(false); }}
+          >
+            <svg className="brush-btn-preview" viewBox="0 0 160 14" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="rainbow-grad" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%"   stopColor="#ff4444"/>
+                  <stop offset="25%"  stopColor="#ffaa00"/>
+                  <stop offset="50%"  stopColor="#44dd44"/>
+                  <stop offset="75%"  stopColor="#4488ff"/>
+                  <stop offset="100%" stopColor="#cc44ff"/>
+                </linearGradient>
+              </defs>
+              <path d="M4 7 Q40 3 80 7 Q120 11 156 7" stroke="url(#rainbow-grad)" strokeWidth="3.5" fill="none" strokeLinecap="round"/>
+            </svg>
+            <span className="brush-btn-name">Rainbow</span>
+            <span className="brush-btn-desc">Full-spectrum colour trail</span>
           </button>
         </div>
       )}
