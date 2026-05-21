@@ -19,6 +19,10 @@ export function Chat({ username, sessionIp }: SessionData) {
 
   async function updateMessages() {
     try {
+      if (sessionIp.includes("127.0.0.1")) {
+        const currentHost = window.location.hostname;
+        sessionIp = sessionIp.replace("127.0.0.1", currentHost);
+      }
       const response = await axios.get(`${sessionIp}/messages/get`);
       setMessages(response.data as ChatMessage[]);
     } catch (err) {
@@ -30,6 +34,10 @@ export function Chat({ username, sessionIp }: SessionData) {
     if (!inputMessage.trim()) return;
 
     try {
+      if (sessionIp.includes("127.0.0.1")) {
+        const currentHost = window.location.hostname;
+        sessionIp = sessionIp.replace("127.0.0.1", currentHost);
+      }
       await axios.post(`${sessionIp}/messages/send`, {
         username: username,
         content: inputMessage,

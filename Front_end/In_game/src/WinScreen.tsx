@@ -42,6 +42,10 @@ export function WinScreen({
   useEffect(() => {
     const getTime = async () => {
       try {
+        if (sessionIp.includes("127.0.0.1")) {
+          const currentHost = window.location.hostname;
+          sessionIp = sessionIp.replace("127.0.0.1", currentHost);
+        }
         const result = await axios.get(`${sessionIp}/status`);
         const data = result.data as StatusData;
 

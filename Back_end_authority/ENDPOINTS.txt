@@ -148,7 +148,7 @@ Naudojama aktyvioms / laukiancioms sesijoms.
   "session_id": "session-abc123",
   "host": "http://127.0.0.1",
   "port": 52345,
-  "status": "waiting",
+  "status": ".",
   "current_image_id": 5,
   "created_at": "2026-05-06T15:00:00",
   "expires_at": 1778080000,

@@ -46,6 +46,10 @@ export class WebsocketWrapper {
 
   async parseHistory(url: string) {
     try {
+      if (url.includes("127.0.0.1")) {
+        const currentHost = window.location.hostname;
+        url = url.replace("127.0.0.1", currentHost);
+      }
       console.log(`trying to get history: ${url}`);
       const response = await fetch(url);
 
