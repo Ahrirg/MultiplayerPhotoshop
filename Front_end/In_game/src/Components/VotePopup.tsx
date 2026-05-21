@@ -29,6 +29,10 @@ export function VotePopup({
 
   const fetchResults = async () => {
     try {
+      if (sessionIp.includes("127.0.0.1")) {
+        const currentHost = window.location.hostname;
+        sessionIp = sessionIp.replace("127.0.0.1", currentHost);
+      }
       const res = await axios.get(`${sessionIp}/vote/results`);
       const voteData = res.data as VoteResults;
       setResults(voteData);
@@ -55,6 +59,10 @@ export function VotePopup({
     if (myVote || submitting) return;
     setSubmitting(true);
     try {
+      if (sessionIp.includes("127.0.0.1")) {
+        const currentHost = window.location.hostname;
+        sessionIp = sessionIp.replace("127.0.0.1", currentHost);
+      }
       await axios.post(`${sessionIp}/vote/cast`, { voter: username, target });
       setMyVote(target);
       fetchResults();

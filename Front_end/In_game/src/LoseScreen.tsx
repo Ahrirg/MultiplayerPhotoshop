@@ -16,7 +16,14 @@ interface VoteResults {
   [player: string]: number;
 }
 
-export function LoseScreen({ sessionIp, username, show, timePlayed = 0, clickCount = 0, role }: LoseScreenProps) {
+export function LoseScreen({
+  sessionIp,
+  username,
+  show,
+  timePlayed = 0,
+  clickCount = 0,
+  role,
+}: LoseScreenProps) {
   const [visible, setVisible] = useState(false);
   const [closing, setClosing] = useState(false);
 
@@ -29,6 +36,10 @@ export function LoseScreen({ sessionIp, username, show, timePlayed = 0, clickCou
 
     const check = async () => {
       try {
+        if (sessionIp.includes("127.0.0.1")) {
+          const currentHost = window.location.hostname;
+          sessionIp = sessionIp.replace("127.0.0.1", currentHost);
+        }
         const res = await axios.get(`${sessionIp}/vote/results`);
         const results = res.data as VoteResults;
 
@@ -85,14 +96,18 @@ export function LoseScreen({ sessionIp, username, show, timePlayed = 0, clickCou
             <p className="lose-sub">
               The players saw through you, <strong>{username}</strong>.
             </p>
-            <p className="lose-sub muted">Your cover was blown. Better luck next round.</p>
+            <p className="lose-sub muted">
+              Your cover was blown. Better luck next round.
+            </p>
           </>
         ) : (
           <>
             <p className="lose-sub">
               The crew turned on you, <strong>{username}</strong>.
             </p>
-            <p className="lose-sub muted">You were innocent. Justice was not served.</p>
+            <p className="lose-sub muted">
+              You were innocent. Justice was not served.
+            </p>
           </>
         )}
 
@@ -107,7 +122,12 @@ export function LoseScreen({ sessionIp, username, show, timePlayed = 0, clickCou
           </div>
         </div>
 
-        <button className="lose-btn lose-btn--lobby" onClick={() => { window.location.href = "/"; }}>
+        <button
+          className="lose-btn lose-btn--lobby"
+          onClick={() => {
+            window.location.href = "/";
+          }}
+        >
           Return to Lobby
         </button>
       </div>
