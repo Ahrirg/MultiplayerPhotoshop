@@ -89,6 +89,30 @@
 .lose-sub.muted { color: #555; font-size: 12px; }
 .lose-sub strong { color: #ddd; }
 
+/* ── Stats ───────────────────────────────── */
+.lose-stats {
+  display: flex;
+  gap: 24px;
+  margin: 4px 0;
+}
+.lose-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.lose-stat-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: #ff6666;
+}
+.lose-stat-label {
+  font-size: 11px;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
 /* ── Button ──────────────────────────────── */
 .lose-btn {
   margin-top: 8px;
@@ -105,4 +129,21 @@
   background: #2a2a2a;
   border-color: #666;
   color: #fff;
+}
+
+.lose-btn--lobby {
+  margin-top: 16px;
+  padding: 12px 36px;
+  background: #1a0000;
+  border-color: rgba(255, 60, 60, 0.4);
+  color: #ff6666;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+.lose-btn--lobby:hover {
+  background: #2e0000;
+  border-color: rgba(255, 60, 60, 0.75);
+  color: #ff9999;
+  box-shadow: 0 0 16px rgba(200, 0, 0, 0.25);
 }

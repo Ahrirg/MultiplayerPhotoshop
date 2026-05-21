@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
-import './Css/App.css'
 import './Css/waiting.css'
 import axios from "axios";
 import { ROLES } from "./Components/Roles";
 import type { RoleInfo } from "./Components/Roles";
 
-const CURSOR_OPTIONS = [
+export const CURSOR_OPTIONS = [
   "🐱", "🐶", "🦊", "🐸",
   "🐙", "🦄", "🐼", "🐯",
   "🐧", "🐢", "🦅", "🐝",
@@ -19,6 +18,7 @@ type LoginOverlayProps = {
   setUserRole: React.Dispatch<React.SetStateAction<RoleInfo | null>>;
   cursorEmoji: string;
   setCursorEmoji: React.Dispatch<React.SetStateAction<string>>;
+  seenPlayerCursors: Record<string, string>;
 };
 
 interface StatusData {
@@ -28,7 +28,7 @@ interface StatusData {
   game_end: string;
 }
 
-export function Waiting({ sessionIp, seenPlayers, userRole, setUserRole, cursorEmoji, setCursorEmoji }: LoginOverlayProps) {
+export function Waiting({ sessionIp, seenPlayers, userRole, setUserRole, cursorEmoji, setCursorEmoji, seenPlayerCursors }: LoginOverlayProps) {
   const [showRoom, setShowRoom] = useState(true);
   const [timeToStart, setTimeToStart] = useState<number>(0);
   const [currentTime, setCurrentTime] = useState<number>(Date.now());
@@ -77,42 +77,55 @@ export function Waiting({ sessionIp, seenPlayers, userRole, setUserRole, cursorE
   }
 
   return (
-    <div className="overlay">
-      <div className="waiting-layout">
-        <div className="waitingRoom">
-          <h2>Current players in the server:</h2>
+    <div className="waiting-overlay">
+      <div className="waiting-modal">
 
-          <div className="PlayerList">
-            {seenPlayers.map((curName, index) => (
-              <div key={index}>
-                <strong>🟢 {curName}</strong>
+        <span className="waiting-title">Waiting Room</span>
+
+        <div className="cursor-picker">
+          <button
+            className="cursor-arrow"
+            onClick={() => {
+              const idx = CURSOR_OPTIONS.indexOf(cursorEmoji);
+              setCursorEmoji(CURSOR_OPTIONS[(idx - 1 + CURSOR_OPTIONS.length) % CURSOR_OPTIONS.length]);
+            }}
+          >◀</button>
+          <span key={cursorEmoji} className="cursor-preview-emoji">{cursorEmoji}</span>
+          <button
+            className="cursor-arrow"
+            onClick={() => {
+              const idx = CURSOR_OPTIONS.indexOf(cursorEmoji);
+              setCursorEmoji(CURSOR_OPTIONS[(idx + 1) % CURSOR_OPTIONS.length]);
+            }}
+          >▶</button>
+        </div>
+
+        <div className="waiting-divider" />
+
+        <span className="waiting-section-label">Players</span>
+
+        <div className="waiting-player-list">
+          {seenPlayers.length === 0 ? (
+            <div className="waiting-player-empty">Waiting for players…</div>
+          ) : (
+            seenPlayers.map((name, i) => (
+              <div key={name} className="waiting-player-row" style={{ animationDelay: `${i * 0.05}s` }}>
+                <span className="waiting-player-dot" />
+                <span className="waiting-player-name">{name}</span>
+                {seenPlayerCursors[name] && (
+                  <span className="waiting-player-cursor">{seenPlayerCursors[name]}</span>
+                )}
               </div>
-            ))}
-          </div>
-
-          <div>Starting in {secondsLeft} sec's</div>
+            ))
+          )}
         </div>
 
-        <div className="cursorPanel">
-          <h3>Pick your cursor</h3>
-          <div className="cursor-picker">
-            <button
-              className="cursor-arrow"
-              onClick={() => {
-                const idx = CURSOR_OPTIONS.indexOf(cursorEmoji);
-                setCursorEmoji(CURSOR_OPTIONS[(idx - 1 + CURSOR_OPTIONS.length) % CURSOR_OPTIONS.length]);
-              }}
-            >◀</button>
-            <span key={cursorEmoji} className="cursor-preview-emoji">{cursorEmoji}</span>
-            <button
-              className="cursor-arrow"
-              onClick={() => {
-                const idx = CURSOR_OPTIONS.indexOf(cursorEmoji);
-                setCursorEmoji(CURSOR_OPTIONS[(idx + 1) % CURSOR_OPTIONS.length]);
-              }}
-            >▶</button>
-          </div>
+        <div className="waiting-divider" />
+
+        <div className="waiting-countdown">
+          Starting in <span>{secondsLeft}s</span>
         </div>
+
       </div>
     </div>
   );

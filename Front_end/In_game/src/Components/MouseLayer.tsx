@@ -9,6 +9,7 @@ type SessionData = {
   seenPlayers: string[];
   setSeenPlayer: React.Dispatch<React.SetStateAction<string[]>>;
   cursorEmoji: string;
+  setSeenPlayerCursors?: React.Dispatch<React.SetStateAction<Record<string, string>>>;
 };
 
 type MousePointerObjs = {
@@ -18,7 +19,7 @@ type MousePointerObjs = {
   cursor?: string;
 }
 
-export function MouseLayer({ username, sessionIp, seenPlayers, setSeenPlayer, cursorEmoji }: SessionData) {
+export function MouseLayer({ username, sessionIp, seenPlayers, setSeenPlayer, cursorEmoji, setSeenPlayerCursors }: SessionData) {
 
   const [mousePointPos, setMousePointPos] = useState<MousePointerObjs[]>([]);
   const websocketRef = useRef<WebsocketWrapper | null>(null);
@@ -48,13 +49,13 @@ export function MouseLayer({ username, sessionIp, seenPlayers, setSeenPlayer, cu
 
     function onMsg(event: MessageEvent<any>) {
       const data: MousePointerObjs = JSON.parse(event.data);
-      setSeenPlayer(prev => {
-        const updated = prev.includes(data.name)
-          ? prev
-          : [...prev, data.name];
+      setSeenPlayer(prev =>
+        prev.includes(data.name) ? prev : [...prev, data.name]
+      );
 
-        return updated;
-      });
+      if (data.cursor) {
+        setSeenPlayerCursors?.(prev => ({ ...prev, [data.name]: data.cursor! }));
+      }
 
       if (data.name === username) return;
 

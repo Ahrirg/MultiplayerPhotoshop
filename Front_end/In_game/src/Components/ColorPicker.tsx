@@ -69,7 +69,7 @@ export function ColorPicker({ onColorChange, buttonRef, visible, hue, brightness
 
     ctx.beginPath();
     ctx.arc(CENTER, CENTER, INNER_R, 0, 2 * Math.PI);
-    ctx.fillStyle = '#2a2a2a';
+    ctx.fillStyle = '#0d0d0d';
     ctx.fill();
 
     const rad = (hue * Math.PI) / 180;

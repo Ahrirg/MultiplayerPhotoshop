@@ -1,20 +1,36 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import '../Css/colorPicker.css'
 
-const WHEEL_SIZE = 160;
-const CENTER = WHEEL_SIZE / 2;
-const OUTER_R = CENTER - 4;
-const INNER_R = OUTER_R * 0.62;
+interface SliderRowProps {
+  label: string;
+  value: number;
+  min?: number;
+  max?: number;
+  trackClass: string;
+  trackStyle?: React.CSSProperties;
+  onChange: (v: number) => void;
+  unit?: string;
+}
 
-function hslToHex(h: number, s: number, l: number): string {
-  s /= 100; l /= 100;
-  const a = s * Math.min(l, 1 - l);
-  const f = (n: number) => {
-    const k = (n + h / 30) % 12;
-    const c = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
-    return Math.round(255 * c).toString(16).padStart(2, '0');
-  };
-  return `#${f(0)}${f(8)}${f(4)}`;
+function SliderRow({ label, value, min = 0, max = 100, trackClass, trackStyle, onChange, unit = '' }: SliderRowProps) {
+  return (
+    <div className="ie-row">
+      <div className="ie-row-header">
+        <span className="ie-label">{label}</span>
+        <span className="ie-value">{value}{unit}</span>
+      </div>
+      <div className={`ie-track ${trackClass}`} style={trackStyle}>
+        <input
+          type="range"
+          min={min}
+          max={max}
+          value={value}
+          onChange={e => onChange(Number(e.target.value))}
+          className="ie-slider"
+        />
+      </div>
+    </div>
+  );
 }
 
 interface ImageEditProps {
@@ -28,80 +44,57 @@ interface ImageEditProps {
   saturation: number;
   contrast: number;
   brightness: number;
+  transparency: number;
   onBrightnessChange: (h: number) => void;
   onContrastChange: (h: number) => void;
   onSaturationChange: (b: number) => void;
+  onTransparencyChange: (v: number) => void;
 }
 
-export function ImageEdit({buttonRef, visible, brightness, contrast, saturation, onBrightnessChange, onContrastChange,onSaturationChange }: ImageEditProps) {
+export function ImageEdit({ buttonRef, visible, brightness, contrast, saturation, transparency, onBrightnessChange, onContrastChange, onSaturationChange, onTransparencyChange }: ImageEditProps) {
   const [pos, setPos] = useState({ top: 0, right: 0 });
 
   useEffect(() => {
     if (!buttonRef.current) return;
     const rect = buttonRef.current.getBoundingClientRect();
-    setPos({
-      top: rect.bottom + 10,
-      right: window.innerWidth - rect.right,
-    });
+    setPos({ top: rect.bottom + 10, right: window.innerWidth - rect.right });
   }, [buttonRef]);
 
   return (
     <div
-        className={`color-popup ${visible ? 'color-popup--visible' : ''}`}
-        style={{ top: pos.top, right: pos.right }}
+      className={`color-popup ie-panel ${visible ? 'color-popup--visible' : ''}`}
+      style={{ top: pos.top, right: pos.right }}
     >
-        <div className="brightness-section">
-        <span className="brightness-label">SATURATION</span>
-        <div
-            className="brightness-track"
-            style={{
-            background: `linear-gradient(to right, #000, hsl(${Math.round(1)}, 100%, 50%), #fff)`
-            }}
-        >
-            <input
-            type="range"
-            min={0}
-            max={100}
-            value={saturation}
-            onChange={e => onSaturationChange(Number(e.target.value))}
-            className="brightness-slider"
-            />
-        </div>
-        <span className="brightness-label">BRIGHTNESS</span>
-         <div
-            className="brightness-track"
-            style={{
-            background: `linear-gradient(to right, #000, hsl(${Math.round(0)}, 100%, 50%), #fff)`
-            }}
-        >
-            <input
-            type="range"
-            min={0}
-            max={100}
-            value={brightness}
-            onChange={e => onBrightnessChange(Number(e.target.value))}
-            className="brightness-slider"
-            />
-        </div>
-        <span className="brightness-label">CONTRAST</span>
-         <div
-            className="brightness-track"
-            style={{
-            background: `linear-gradient(to right, #000, hsl(${Math.round(0)}, 100%, 50%), #fff)`
-            }}
-        >
-            <input
-            type="range"
-            min={0}
-            max={100}
-            value={contrast}
-            onChange={e => onContrastChange(Number(e.target.value))}
-            className="brightness-slider"
-            />
-        </div>
-        </div>
+      <span className="ie-title">IMAGE EDIT</span>
 
-
+      <SliderRow
+        label="Brightness"
+        value={brightness}
+        trackClass="ie-track--brightness"
+        onChange={onBrightnessChange}
+        unit="%"
+      />
+      <SliderRow
+        label="Contrast"
+        value={contrast}
+        trackClass="ie-track--contrast"
+        onChange={onContrastChange}
+        unit="%"
+      />
+      <SliderRow
+        label="Saturation"
+        value={saturation}
+        trackClass="ie-track--saturation"
+        onChange={onSaturationChange}
+        unit="%"
+      />
+      <SliderRow
+        label="Opacity"
+        value={transparency}
+        trackClass="ie-track--transparency"
+        onChange={onTransparencyChange}
+        unit="%"
+      />
     </div>
-    );
-} 
+  );
+}
